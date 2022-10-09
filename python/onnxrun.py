@@ -12,7 +12,7 @@ import os
 os.chdir(sys.path[0])
 
 
-ONNX_PATH = "../weights/yolov5s.onnx"
+ONNX_PATH = "../weights/yolov5n.onnx"
 IMAGE_PATH = "../images/bus.jpg"
 SCORE_THRESHOLD = 0.2
 NMS_THRESHOLD = 0.4
