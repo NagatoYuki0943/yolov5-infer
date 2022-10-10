@@ -31,7 +31,7 @@ def resize_and_pad(image, new_shape):
         new_shape (Tuple): [h, w]
 
     Returns:
-        Tuple: 所放的图片, 填充的宽, 填充的高
+        Tuple: 缩放的图片, 填充的宽, 填充的高
     """
     old_size = image.shape[:2]
     ratio = float(new_shape[-1]/max(old_size)) #fix to accept also rectangular images
