@@ -180,9 +180,7 @@ def inference():
     model.setInput(blob)
     # 推理模型结果
     detections = model.forward()
-    print(detections[0].shape)                        # [1, 25200, 85]
-    return
-
+    # print(detections[0].shape)                        # [1, 25200, 85]
     detections = np.squeeze(detections[0])              # [25200, 85]
 
     # Step 8. Postprocessing including NMS
@@ -190,7 +188,7 @@ def inference():
     end = time.time()
     print((end - start) * 1000)
 
-    cv2.imwrite("./onnx_det.png", img)
+    cv2.imwrite("./opencv_det.png", img)
 
 
 if __name__ == "__main__":
