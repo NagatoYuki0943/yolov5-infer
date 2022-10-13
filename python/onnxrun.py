@@ -16,8 +16,6 @@ import os
 os.chdir(sys.path[0])
 
 
-ONNX_PATH = "../weights/yolov5n.onnx"
-IMAGE_PATH = "../images/bus.jpg"
 SCORE_THRESHOLD = 0.2
 NMS_THRESHOLD = 0.4
 CONFIDENCE_THRESHOLD = 0.4
@@ -189,6 +187,9 @@ def post(detections, delta_w ,delta_h, img):
 #   推理
 #--------------------------------#
 def inference():
+    ONNX_PATH = "../weights/yolov5s.onnx"
+    IMAGE_PATH = "../images/bus.jpg"
+
     # 获取图片,扩展的宽高
     img, input_tensor, delta_w ,delta_h = get_image(IMAGE_PATH)
 
