@@ -101,14 +101,15 @@ def inference():
     index2label = get_index2label(YAML_PATH)
 
     start = time.time()
+    # 返回一个列表,每一个数据是一个3维numpy数组
     detections = model.run(None, {model.get_inputs()[0].name: input_tensor})
-    # print(detections[0].shape)                        # [1, 25200, 85]
-    detections = np.squeeze(detections[0])              # [25200, 85]
+    print(detections[0].shape)          # [1, 25200, 85]
+    detection = detections[0][0]        # [25200, 85]
 
     # Step 8. Postprocessing including NMS
-    img = post(detections, delta_w ,delta_h, img, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, index2label)
+    img = post(detection, delta_w ,delta_h, img, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, index2label)
     end = time.time()
-    print((end - start) * 1000)
+    print('time:', (end - start) * 1000)
 
     cv2.imwrite("./onnx_det.png", img)
 

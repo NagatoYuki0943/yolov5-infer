@@ -84,15 +84,15 @@ def inference():
     start = time.time()
     # 设置模型输入
     model.setInput(blob)
-    # 推理模型结果
+    # 返回3维numpy数组
     detections = model.forward()
-    # print(detections[0].shape)                        # [1, 25200, 85]
-    detections = np.squeeze(detections[0])              # [25200, 85]
+    print(detections.shape)         # [1, 25200, 85]
+    detection = detections[0]       # [25200, 85]
 
     # Step 8. Postprocessing including NMS
-    img = post(detections, delta_w ,delta_h, img, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, index2label)
+    img = post(detection, delta_w ,delta_h, img, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, index2label)
     end = time.time()
-    print((end - start) * 1000)
+    print('time:', (end - start) * 1000)
 
     cv2.imwrite("./opencv_det.png", img)
 
