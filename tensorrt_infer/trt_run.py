@@ -122,7 +122,7 @@ class TensorRTInfer:
             specs.append((o['shape'], o['dtype']))
         return specs
 
-    def infer(self, batch: np.ndarray) -> list:
+    def infer(self, batch: np.ndarray) -> list[np.ndarray]:
         """
         Execute inference on a batch of images.
         :param batch: A numpy array holding the image batch.

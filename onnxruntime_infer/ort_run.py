@@ -18,7 +18,7 @@ NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越
 print("onnxruntime all providers:", ort.get_all_providers())
 print("onnxruntime available providers:", ort.get_available_providers())
 # ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
-print(ort.get_device())
+print("ort devices:", ort.get_device())
 # GPU
 
 
@@ -43,7 +43,7 @@ class OrtInference(Inference):
     def get_model(self, onnx_path: str, mode: str="cpu") -> ort.InferenceSession:
         """获取onnxruntime模型
         Args:
-            onnx_path (str):    模型路径
+            onnx_path (str):      模型路径
             mode (str, optional): cpu cuda tensorrt. Defaults to cpu.
         Returns:
             ort.InferenceSession: 模型session
@@ -115,7 +115,7 @@ class OrtInference(Inference):
         self.infer(x)
         print("warmup finish")
 
-    def infer(self, image: np.ndarray) -> np.ndarray:
+    def infer(self, image: np.ndarray) -> list[np.ndarray]:
         """推理单张图片
         Args:
             image (np.ndarray): 图片 [B, C, H, W]
@@ -127,6 +127,7 @@ class OrtInference(Inference):
         inputs = self.model.get_inputs()
         input_name1 = inputs[0].name
         boxes = self.model.run(None, {input_name1: image})    # 返回值为list
+
         return boxes
 
 

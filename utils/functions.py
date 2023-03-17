@@ -19,18 +19,12 @@ def get_image(image_path: str):
     Returns:
         Tuple: 原图, 输入的tensor, 填充的宽, 填充的高
     """
-    img = cv2.imread(str(Path(image_path)))
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # BGR2RGB
+    image = cv2.imread(str(Path(image_path)))
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR2RGB
 
-    img_reized, delta_w ,delta_h = resize_and_pad(img_rgb, (640, 640))
+    image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, (640, 640))
 
-    img_reized = img_reized.astype(np.float32)
-    img_reized /= 255.0                             # 归一化
-
-    img_reized = img_reized.transpose(2, 0, 1)      # [H, W, C] -> [C, H, W]
-    input_tensor = np.expand_dims(img_reized, 0)    # [C, H, W] -> [B, C, H, W]
-
-    return img, input_tensor, delta_w ,delta_h
+    return image, image_reized, delta_w ,delta_h
 
 
 def resize_and_pad(image, new_shape):
@@ -53,9 +47,31 @@ def resize_and_pad(image, new_shape):
     delta_h = new_shape[0] - new_size[0]
     # 使用灰色填充到640*640的形状
     color = [100, 100, 100]
-    img_reized = cv2.copyMakeBorder(image, 0, delta_h, 0, delta_w, cv2.BORDER_CONSTANT, value=color)
+    image_reized = cv2.copyMakeBorder(image, 0, delta_h, 0, delta_w, cv2.BORDER_CONSTANT, value=color)
 
-    return img_reized, delta_w ,delta_h
+    return image_reized, delta_w ,delta_h
+
+
+def transform(image: np.ndarray, openvino_preprocess=False) -> np.ndarray:
+    """图片预处理
+
+    Args:
+        image (np.ndarray): 经过缩放的图片
+        openvino_preprocess (bool, optional): 是否使用了openvino的图片预处理. Defaults to False.
+
+    Returns:
+        np.ndarray: 经过预处理的图片
+    """
+    image = image.astype(np.float32)
+
+    image = image.transpose(2, 0, 1)        # [H, W, C] -> [C, H, W]
+
+    # openvino预处理会自动处理scale
+    if not openvino_preprocess:
+        image /= 255.0                      # 归一化
+
+    input_array = np.expand_dims(image, 0)  # [C, H, W] -> [B, C, H, W]
+    return input_array
 
 
 def mulit_colors(num_classes: int):
@@ -129,14 +145,14 @@ def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: fl
     return detections
 
 
-def figure_boxes(detections: list, delta_w: int,delta_h: int, img: np.ndarray, index2label: dict) -> np.ndarray:
+def figure_boxes(detections: list, delta_w: int,delta_h: int, image: np.ndarray, index2label: dict) -> np.ndarray:
     """将框画到原图
 
     Args:
         detections (list):  经过mns处理的框
         delta_w (int):      填充的宽
         delta_h (int):      填充的高
-        img (np.ndarray):   原图
+        image (np.ndarray):   原图
         index2label (dict): id2label
 
     Returns:
@@ -144,7 +160,8 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, img: np.ndarray, i
     """
     if len(detections) == 0:
         print("no detection")
-        return img
+        # 返回原图
+        return image
 
     # 获取不同颜色
     colors = mulit_colors(len(index2label.keys()))
@@ -154,30 +171,30 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, img: np.ndarray, i
         box = detection["box"]
         classId = detection["class_index"]
         confidence = detection["confidence"]
-        print( f"Bbox {i} Class: {classId} Confidence: {confidence}, Scaled coords: [ cx: {(box[0] + (box[2] / 2)) / img.shape[1]}, cy: {(box[1] + (box[3] / 2)) / img.shape[0]}, w: {box[2]/ img.shape[1]}, h: {box[3] / img.shape[0]} ]" )
+        print( f"Bbox {i} Class: {classId} Confidence: {confidence}, Scaled coords: [ cx: {(box[0] + (box[2] / 2)) / image.shape[1]}, cy: {(box[1] + (box[3] / 2)) / image.shape[0]}, w: {box[2]/ image.shape[1]}, h: {box[3] / image.shape[0]} ]" )
 
         # 还原到原图尺寸                                       origin
-        box[0] = box[0] / ((640-delta_w) / img.shape[1])    # center_x  xmin
-        box[2] = box[2] / ((640-delta_w) / img.shape[1])    # center_y  ymin
-        box[1] = box[1] / ((640-delta_h) / img.shape[0])    # w         w
-        box[3] = box[3] / ((640-delta_h) / img.shape[0])    # h         h
+        box[0] = box[0] / ((640-delta_w) / image.shape[1])    # center_x  xmin
+        box[2] = box[2] / ((640-delta_w) / image.shape[1])    # center_y  ymin
+        box[1] = box[1] / ((640-delta_h) / image.shape[0])    # w         w
+        box[3] = box[3] / ((640-delta_h) / image.shape[0])    # h         h
 
         xmax = box[0] + box[2]
         ymax = box[1] + box[3]
         # 绘制框
-        img = cv2.rectangle(img, (int(box[0]), int(box[1])), (int(xmax), int(ymax)), colors[classId], 1)
+        image = cv2.rectangle(image, (int(box[0]), int(box[1])), (int(xmax), int(ymax)), colors[classId], 1)
         # 直接在原图上绘制文字背景，不透明
-        # img = cv2.rectangle(img, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
+        # image = cv2.rectangle(image, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
         # 添加文字背景
-        temp_img = np.zeros(img.shape).astype(np.uint8)
-        temp_img = cv2.rectangle(temp_img, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
+        temp_image = np.zeros(image.shape).astype(np.uint8)
+        temp_image = cv2.rectangle(temp_image, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
         # 叠加原图和文字背景，文字背景是透明的
-        img = cv2.addWeighted(img, 1.0, temp_img, 1.0, 1)
+        image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
         # 添加文字
-        img = cv2.putText(img, str(index2label[classId]) + " " + "{:.2f}".format(confidence),
+        image = cv2.putText(image, str(index2label[classId]) + " " + "{:.2f}".format(confidence),
                           (int(box[0]), int(box[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
-    return img
+    return image
 
 
 def load_yaml(yaml_path: str) -> dict:

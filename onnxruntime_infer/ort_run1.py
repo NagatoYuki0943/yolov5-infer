@@ -9,7 +9,7 @@ import onnxruntime as ort
 import numpy as np
 import cv2
 import time
-from utils import get_image, check_onnx, nms, figure_boxes, load_yaml
+from utils import get_image, transform, check_onnx, nms, figure_boxes, load_yaml
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
@@ -64,7 +64,8 @@ def inference():
     IMAGE_PATH = "../images/bus.jpg"
 
     # 1. 获取图片,缩放的图片,扩展的宽高
-    img, input_tensor, delta_w ,delta_h = get_image(IMAGE_PATH)
+    image, image_reized, delta_w ,delta_h = get_image(IMAGE_PATH)
+    input_array = transform(image_reized)
 
     # 2. 获取模型
     model = get_onnx_model(ONNX_PATH, False)
@@ -75,17 +76,17 @@ def inference():
 
     start = time.time()
     # 4. infer 返回一个列表,每一个数据是一个3维numpy数组
-    boxes = model.run(None, {model.get_inputs()[0].name: input_tensor})
+    boxes = model.run(None, {model.get_inputs()[0].name: input_array})
     print(boxes[0].shape)          # [1, 25200, 85]
     detections = boxes[0][0]        # [25200, 85]
 
     # 5. Postprocessing including NMS
     detections = nms(detections, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD)
-    img = figure_boxes(detections, delta_w ,delta_h, img, index2name)
+    image = figure_boxes(detections, delta_w ,delta_h, image, index2name)
     end = time.time()
     print(f'time: {int((end - start) * 1000)} ms')
 
-    cv2.imwrite("./onnx_det.png", img)
+    cv2.imwrite("./ort_det.png", image)
 
 
 if __name__ == "__main__":
