@@ -1,6 +1,6 @@
 # [下载英特尔® 发行版 OpenVINO™ 工具套件 (intel.cn)](https://www.intel.cn/content/www/cn/zh/developer/tools/openvino-toolkit/download.html)
 
-
+一般只需要 `pip install openvino-dev==version` 即可
 
 # openvino数据预处理
 
