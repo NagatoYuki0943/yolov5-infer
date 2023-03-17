@@ -6,7 +6,7 @@ sys.path.append("../")
 
 import onnxruntime as ort
 import numpy as np
-from utils import Inference, check_onnx, load_yaml, single
+from utils import Inference, check_onnx, load_yaml, single, multi
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
@@ -120,7 +120,7 @@ class OrtInference(Inference):
         Args:
             image (np.ndarray): 图片 [B, C, H, W]
         Returns:
-            np.ndarray: [B, 25200, 85]
+            np.ndarray: boxes [B, 25200, 85]
         """
 
         # 推理
@@ -144,3 +144,9 @@ if __name__ == "__main__":
     inference = OrtInference(ONNX_PATH, y["size"], "cpu")
     # 单张图片推理
     single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
+
+    # 多张图片推理
+    IMAGE_DIR = "../../datasets/coco128/images/train2017"
+    SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
+    # multi(inference, IMAGE_DIR, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
+    # avg infer time: 77.4296875 ms, avg nms time: 19.59375 ms, avg figure time: 0.0 ms

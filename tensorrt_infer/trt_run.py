@@ -3,7 +3,6 @@
 import sys
 sys.path.append("../")
 
-from utils import load_yaml, single
 import numpy as np
 import tensorrt as trt
 import pycuda.driver as cuda
@@ -16,6 +15,7 @@ try:
 except ModuleNotFoundError:
     import pycuda.autoinit
 
+from utils import load_yaml, single, multi
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
 SCORE_THRESHOLD      = 0.2  # 框的得分置信度,越大越严格
@@ -162,3 +162,8 @@ if __name__ == "__main__":
     # 单张图片推理
     single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
 
+    # 多张图片推理
+    IMAGE_DIR = "../../datasets/coco128/images/train2017"
+    SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
+    # multi(inference, IMAGE_DIR, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
+    # avg infer time: 63.09375 ms, avg nms time: 13.453125 ms, avg figure time: 0.0 ms

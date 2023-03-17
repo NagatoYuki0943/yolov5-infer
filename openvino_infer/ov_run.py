@@ -6,7 +6,7 @@ from openvino.preprocess import PrePostProcessor
 from openvino.preprocess import ColorFormat
 from openvino.runtime import Layout, Type
 import numpy as np
-from utils import Inference, load_yaml, single
+from utils import Inference, load_yaml, single, multi
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
@@ -112,9 +112,9 @@ class OVInference(Inference):
     def infer(self, image: np.ndarray) -> list[np.ndarray]:
         """推理单张图片
         Args:
-            image (np.ndarray): 图片
+            image (np.ndarray): 图片 [B, C, H, W]
         Returns:
-            tuple[np.ndarray, float]: hotmap, score
+            np.ndarray: boxes [B, 25200, 85]
         """
         # 1.推理 多种方式
         # https://docs.openvino.ai/latest/openvino_2_0_inference_pipeline.html
@@ -151,3 +151,9 @@ if __name__ == "__main__":
     inference = OVInference(OPENVINO_PATH, y["size"], "CPU", OPENVINO_PREPROCESS)
     # 单张图片推理
     single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH, OPENVINO_PREPROCESS)
+
+    # 多张图片推理
+    IMAGE_DIR = "../../datasets/coco128/images/train2017"
+    SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
+    # multi(inference, IMAGE_DIR, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR, OPENVINO_PREPROCESS)
+    # avg infer time: 60.09375 ms, avg nms time: 15.046875 ms, avg figure time: 0.0 ms
