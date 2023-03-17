@@ -9,35 +9,12 @@ import onnxruntime as ort
 import numpy as np
 import cv2
 import time
-from utils import resize_and_pad, check_onnx, nms, figure_boxes, load_yaml
+from utils import get_image, check_onnx, nms, figure_boxes, load_yaml
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD = 0.2       # 框的得分置信度,越大越严格
-NMS_THRESHOLD = 0.45        # 非极大抑制所用到的nms_iou大小,越小越严格
-
-
-def get_image(image_path: str):
-    """获取图像
-
-    Args:
-        image_path (str): 图片路径
-
-    Returns:
-        Tuple: 原图, 输入的tensor, 填充的宽, 填充的高
-    """
-    img = cv2.imread(str(Path(image_path)))
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # BGR2RGB
-
-    img_reized, delta_w ,delta_h = resize_and_pad(img_rgb, (640, 640))
-
-    img_reized = img_reized.astype(np.float32)
-    img_reized /= 255.0                             # 归一化
-
-    img_reized = img_reized.transpose(2, 0, 1)      # [H, W, C] -> [C, H, W]
-    input_tensor = np.expand_dims(img_reized, 0)    # [C, H, W] -> [B, C, H, W]
-
-    return img, input_tensor, delta_w ,delta_h
+SCORE_THRESHOLD      = 0.2  # 框的得分置信度,越大越严格
+NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
 
 
 def get_onnx_model(onnx_path: str, cuda=False):
@@ -86,18 +63,18 @@ def inference():
     ONNX_PATH  = "../weights/yolov5s.onnx"
     IMAGE_PATH = "../images/bus.jpg"
 
-    # 1.获取图片,扩展的宽高
+    # 1. 获取图片,缩放的图片,扩展的宽高
     img, input_tensor, delta_w ,delta_h = get_image(IMAGE_PATH)
 
-    # 2.获取模型
+    # 2. 获取模型
     model = get_onnx_model(ONNX_PATH, False)
 
-    # 3.获取label
+    # 3. 获取label
     y = load_yaml(YAML_PATH)
     index2name = y["names"]
 
     start = time.time()
-    # 4.infer 返回一个列表,每一个数据是一个3维numpy数组
+    # 4. infer 返回一个列表,每一个数据是一个3维numpy数组
     boxes = model.run(None, {model.get_inputs()[0].name: input_tensor})
     print(boxes[0].shape)          # [1, 25200, 85]
     detections = boxes[0][0]        # [25200, 85]

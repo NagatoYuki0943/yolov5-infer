@@ -4,7 +4,33 @@ sys.path.append("../")
 import yaml
 import cv2
 import onnx
+import time
 import numpy as np
+import colorsys
+from pathlib import Path
+
+
+def get_image(image_path: str):
+    """获取图像
+
+    Args:
+        image_path (str): 图片路径
+
+    Returns:
+        Tuple: 原图, 输入的tensor, 填充的宽, 填充的高
+    """
+    img = cv2.imread(str(Path(image_path)))
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # BGR2RGB
+
+    img_reized, delta_w ,delta_h = resize_and_pad(img_rgb, (640, 640))
+
+    img_reized = img_reized.astype(np.float32)
+    img_reized /= 255.0                             # 归一化
+
+    img_reized = img_reized.transpose(2, 0, 1)      # [H, W, C] -> [C, H, W]
+    input_tensor = np.expand_dims(img_reized, 0)    # [C, H, W] -> [B, C, H, W]
+
+    return img, input_tensor, delta_w ,delta_h
 
 
 def resize_and_pad(image, new_shape):
@@ -30,6 +56,17 @@ def resize_and_pad(image, new_shape):
     img_reized = cv2.copyMakeBorder(image, 0, delta_h, 0, delta_w, cv2.BORDER_CONSTANT, value=color)
 
     return img_reized, delta_w ,delta_h
+
+
+def mulit_colors(num_classes: int):
+    #---------------------------------------------------#
+    #   https://github.com/bubbliiiing/yolov8-pytorch/blob/master/yolo.py#L88
+    #   画框设置不同的颜色
+    #---------------------------------------------------#
+    hsv_tuples = [(x / num_classes, 1., 1.) for x in range(num_classes)]
+    colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
+    colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
+    return colors
 
 
 def check_onnx(onnx_path):
@@ -109,23 +146,34 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, img: np.ndarray, i
         print("no detection")
         return img
 
-# Print results and save Figure with detections
+    # 获取不同颜色
+    colors = mulit_colors(len(index2label.keys()))
+
+    # Print results and save Figure with detections
     for i, detection in enumerate(detections):
         box = detection["box"]
         classId = detection["class_index"]
         confidence = detection["confidence"]
         print( f"Bbox {i} Class: {classId} Confidence: {confidence}, Scaled coords: [ cx: {(box[0] + (box[2] / 2)) / img.shape[1]}, cy: {(box[1] + (box[3] / 2)) / img.shape[0]}, w: {box[2]/ img.shape[1]}, h: {box[3] / img.shape[0]} ]" )
 
-        # 还原到原图尺寸
-        box[0] = box[0] / ((640-delta_w) / img.shape[1])
-        box[2] = box[2] / ((640-delta_w) / img.shape[1])
-        box[1] = box[1] / ((640-delta_h) / img.shape[0])
-        box[3] = box[3] / ((640-delta_h) / img.shape[0])
+        # 还原到原图尺寸                                       origin
+        box[0] = box[0] / ((640-delta_w) / img.shape[1])    # center_x  xmin
+        box[2] = box[2] / ((640-delta_w) / img.shape[1])    # center_y  ymin
+        box[1] = box[1] / ((640-delta_h) / img.shape[0])    # w         w
+        box[3] = box[3] / ((640-delta_h) / img.shape[0])    # h         h
 
         xmax = box[0] + box[2]
         ymax = box[1] + box[3]
-        img = cv2.rectangle(img, (int(box[0]), int(box[1])), (int(xmax), int(ymax)), (0, 255, 0), 3)
-        img = cv2.rectangle(img, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), (0, 255, 0), cv2.FILLED)
+        # 绘制框
+        img = cv2.rectangle(img, (int(box[0]), int(box[1])), (int(xmax), int(ymax)), colors[classId], 1)
+        # 直接在原图上绘制文字背景，不透明
+        # img = cv2.rectangle(img, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
+        # 添加文字背景
+        temp_img = np.zeros(img.shape).astype(np.uint8)
+        temp_img = cv2.rectangle(temp_img, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
+        # 叠加原图和文字背景，文字背景是透明的
+        img = cv2.addWeighted(img, 1.0, temp_img, 1.0, 1)
+        # 添加文字
         img = cv2.putText(img, str(index2label[classId]) + " " + "{:.2f}".format(confidence),
                           (int(box[0]), int(box[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 

@@ -4,40 +4,14 @@
 import sys
 sys.path.append("../")
 
-from pathlib import Path
 import onnxruntime as ort
 import numpy as np
-import cv2
-import time
-from utils import resize_and_pad, check_onnx, nms, figure_boxes, load_yaml
+from utils import Inference, check_onnx, load_yaml, single
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD = 0.2       # 框的得分置信度,越大越严格
-NMS_THRESHOLD = 0.45        # 非极大抑制所用到的nms_iou大小,越小越严格
-
-
-def get_image(image_path: str):
-    """获取图像
-
-    Args:
-        image_path (str): 图片路径
-
-    Returns:
-        Tuple: 原图, 输入的tensor, 填充的宽, 填充的高
-    """
-    img = cv2.imread(str(Path(image_path)))
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # BGR2RGB
-
-    img_reized, delta_w ,delta_h = resize_and_pad(img_rgb, (640, 640))
-
-    img_reized = img_reized.astype(np.float32)
-    img_reized /= 255.0                             # 归一化
-
-    img_reized = img_reized.transpose(2, 0, 1)      # [H, W, C] -> [C, H, W]
-    input_tensor = np.expand_dims(img_reized, 0)    # [C, H, W] -> [B, C, H, W]
-
-    return img, input_tensor, delta_w ,delta_h
+SCORE_THRESHOLD      = 0.2  # 框的得分置信度,越大越严格
+NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
 
 
 # print(ort.__version__)
@@ -48,12 +22,12 @@ print(ort.get_device())
 # GPU
 
 
-class OrtInference():
-    def __init__(self, size: list[int], model_path: str, mode: str="cpu") -> None:
+class OrtInference(Inference):
+    def __init__(self, model_path: str, size: list[int], mode: str="cpu") -> None:
         """
         Args:
-            size (list[int]): 推理图片大小
             model_path (str): 模型路径
+            size (list[int]): 推理图片大小 [H, W]
             mode (str, optional): cpu cuda tensorrt. Defaults to cpu.
         """
         super().__init__()
@@ -156,42 +130,16 @@ class OrtInference():
         return boxes
 
 
-def single(inference: OrtInference, image_path: str, index2name: dict, confidence_threshold: float, score_threshold: float, nms_threshold: float):
-    """单张图片推理
-
-    Args:
-        inference (OrtInference):       推力器
-        image_path (str):               图片路径
-        index2name (dict):              index2name
-        confidence_threshold (float):   只有得分大于置信度的预测框会被保留下来,越大越严格
-        score_threshold (float):        框的得分置信度,越大越严格
-        nms_threshold (float):          非极大抑制所用到的nms_iou大小,越小越严格
-    """
-
-    img, input_tensor, delta_w ,delta_h = get_image(image_path)
-    t1 = time.time()
-    boxes = inference.infer(input_tensor)
-    t2 = time.time()
-    print(boxes[0].shape)       # [1, 25200, 85]
-
-    detections = boxes[0][0]    # [25200, 85]
-    detections = nms(detections, confidence_threshold, score_threshold, nms_threshold)
-    t3 = time.time()
-    img = figure_boxes(detections, delta_w ,delta_h, img, index2name)
-    t4 = time.time()
-    print(f"infer time: {int((t2-t1) * 1000)} ms, nms time: {int((t3-t2) * 1000)} ms, figure time: {int((t4-t3) * 1000)} ms")
-
-    cv2.imwrite("./onnx_det.png", img)
-
-
 if __name__ == "__main__":
     YAML_PATH  = "../weights/yolov5.yaml"
     ONNX_PATH  = "../weights/yolov5s.onnx"
     IMAGE_PATH = "../images/bus.jpg"
+    SAVE_PATH  = "./ort_det.png"
+
     # 获取label
     y = load_yaml(YAML_PATH)
     index2name = y["names"]
     # 实例化推理器
-    inference = OrtInference(y["size"], ONNX_PATH, "cpu")
+    inference = OrtInference(ONNX_PATH, y["size"], "cpu")
     # 单张图片推理
-    single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD)
+    single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)

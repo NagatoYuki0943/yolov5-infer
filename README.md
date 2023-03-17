@@ -7,3 +7,8 @@
 # 参考
 
 https://github.com/dacquaviva/yolov5-openvino-cpp-python
+
+
+
+# onnxruntime-gpu要使用cuda和cudnn
+

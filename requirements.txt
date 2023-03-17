@@ -1,3 +1,8 @@
-# onnxruntime
-onnxruntime-gpu
 opencv-python
+
+# onnx
+# onnxruntime   # CPU
+onnxruntime-gpu # GPU
+
+# tensorrt
+# 安装方式在trt的README.md中
