@@ -37,7 +37,10 @@ class OrtInference(Inference):
         self.size = size
         # 3.载入模型
         self.model = self.get_model(model_path, mode)
-        # 4.预热模型
+        # 4.获取模型收入输出
+        self.inputs = self.model.get_inputs()
+        self.outputs = self.model.get_outputs()
+        # 5.预热模型
         self.warm_up()
 
     def get_model(self, onnx_path: str, mode: str="cpu") -> ort.InferenceSession:
@@ -124,9 +127,7 @@ class OrtInference(Inference):
         """
 
         # 推理
-        inputs = self.model.get_inputs()
-        input_name1 = inputs[0].name
-        boxes = self.model.run(None, {input_name1: image})    # 返回值为list
+        boxes = self.model.run(None, {self.inputs[0].name: image})    # 返回值为list
 
         return boxes
 

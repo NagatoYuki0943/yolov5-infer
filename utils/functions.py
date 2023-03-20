@@ -166,7 +166,7 @@ def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: fl
     return detections
 
 
-def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], image: np.ndarray, index2label: dict) -> np.ndarray:
+def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], image: np.ndarray, index2name: dict) -> np.ndarray:
     """将框画到原图
 
     Args:
@@ -175,7 +175,7 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], i
         delta_h (int):      填充的高
         size (list[int]):   推理 h w 640, 640
         image (np.ndarray): 原图
-        index2label (dict): id2label
+        index2name (dict):  index2name
 
     Returns:
         np.ndarray: 绘制的图
@@ -186,7 +186,7 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], i
         return image
 
     # 获取不同颜色
-    colors = mulit_colors(len(index2label.keys()))
+    colors = mulit_colors(len(index2name.keys()))
 
     # Print results and save Figure with detections
     for i, detection in enumerate(detections):
@@ -199,7 +199,7 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], i
         ymin = int(box[1] / ((size[0] - delta_h) / image.shape[0]))
         xmax = int(box[2] / ((size[1] - delta_w) / image.shape[1]))
         ymax = int(box[3] / ((size[0] - delta_h) / image.shape[0]))
-        print( f"Bbox {i} Class: {classId}, Confidence: {confidence}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
+        print( f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
 
         # 绘制框
         image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 1)
@@ -211,7 +211,7 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], i
         # 叠加原图和文字背景，文字背景是透明的
         image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
         # 添加文字
-        image = cv2.putText(image, str(index2label[classId]) + " " + "{:.2f}".format(confidence),
+        image = cv2.putText(image, str(index2name[classId]) + " " + "{:.2f}".format(confidence),
                            (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
     return image

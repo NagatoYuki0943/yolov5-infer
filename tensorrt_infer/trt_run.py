@@ -128,10 +128,10 @@ class TensorRTInfer:
         :param batch: A numpy array holding the image batch.
         :return A list of outputs as numpy arrays.
         """
-        batch = np.ascontiguousarray(batch)
+        batch = np.ascontiguousarray(batch) # 将图片内存变得连续
         # Copy I/O and Execute
         cuda.memcpy_htod(self.inputs[0]['allocation'], batch) # 将内存中的图片移动到显存上
-        self.context.execute_v2(self.allocations)
+        self.context.execute_v2(self.allocations)             # infer
         for o in range(len(self.outputs)):                    # 将显存中的结果移动到内存上
             cuda.memcpy_dtoh(self.outputs[o]['host_allocation'], self.outputs[o]['allocation'])
 
