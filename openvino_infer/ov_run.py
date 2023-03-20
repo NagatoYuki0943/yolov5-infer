@@ -10,11 +10,6 @@ import cv2
 from utils import Inference, get_image
 
 
-CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD      = 0.2  # nms分类得分阈值,越大越严格
-NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
-
-
 """openvino图片预处理方法
 input(0)/output(0) 按照id找指定的输入输出,不指定找全部的输入输出
 # input().tensor()       有7个方法
@@ -138,10 +133,10 @@ if __name__ == "__main__":
     OPENVINO_PATH = "../weights/yolov5s_openvino_model/yolov5s.xml"
     config = {
         'yaml_path':            "../weights/yolov5.yaml",
-        'confidence_threshold': CONFIDENCE_THRESHOLD,
-        'score_threshold':      SCORE_THRESHOLD,
-        'nms_threshold':        NMS_THRESHOLD,
-        'openvino_preprocess':  True,
+        'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
+        'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
+        'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
+        'openvino_preprocess':  True,   # 是否使用openvino图片预处理
     }
     # 实例化推理器
     inference = OVInference(OPENVINO_PATH, "CPU", **config)

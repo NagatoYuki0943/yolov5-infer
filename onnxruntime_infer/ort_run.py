@@ -10,11 +10,6 @@ import cv2
 from utils import Inference, check_onnx, get_image
 
 
-CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD      = 0.2  # nms分类得分阈值,越大越严格
-NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
-
-
 # print(ort.__version__)
 print("onnxruntime all providers:", ort.get_all_providers())
 print("onnxruntime available providers:", ort.get_available_providers())
@@ -137,9 +132,9 @@ if __name__ == "__main__":
     ONNX_PATH  = "../weights/yolov5s.onnx"
     config = {
         'yaml_path':            "../weights/yolov5.yaml",
-        'confidence_threshold': CONFIDENCE_THRESHOLD,
-        'score_threshold':      SCORE_THRESHOLD,
-        'nms_threshold':        NMS_THRESHOLD,
+        'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
+        'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
+        'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
     }
 
     # 实例化推理器
