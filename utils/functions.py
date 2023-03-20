@@ -34,20 +34,17 @@ def get_image(image_path: str):
     Returns:
         Tuple: 原图, 输入的tensor, 填充的宽, 填充的高
     """
-    image = cv2.imread(str(Path(image_path)))
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR2RGB
-
-    image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, (640, 640))
-
-    return image, image_reized, delta_w ,delta_h
+    image_bgr = cv2.imread(str(Path(image_path)))
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)  # BGR2RGB
+    return image_rgb
 
 
 def resize_and_pad(image, new_shape):
     """缩放图片并填充为正方形
 
     Args:
-        image (np.Array): 图片
-        new_shape (Tuple): [h, w]
+        image (np.Array):      图片
+        new_shape (list[int]): [h, w]
 
     Returns:
         Tuple: 缩放的图片, 填充的宽, 填充的高
@@ -169,13 +166,14 @@ def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: fl
     return detections
 
 
-def figure_boxes(detections: list, delta_w: int,delta_h: int, image: np.ndarray, index2label: dict) -> np.ndarray:
+def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], image: np.ndarray, index2label: dict) -> np.ndarray:
     """将框画到原图
 
     Args:
         detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为float类型
         delta_w (int):      填充的宽
         delta_h (int):      填充的高
+        size (list[int]):   推理 h w 640, 640
         image (np.ndarray): 原图
         index2label (dict): id2label
 
@@ -197,10 +195,10 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, image: np.ndarray,
         confidence = detection["confidence"]
 
         # 还原到原图尺寸并转化为int                    shape: (h, w)
-        xmin = int(box[0] / ((640 - delta_w) / image.shape[1]))
-        ymin = int(box[1] / ((640 - delta_h) / image.shape[0]))
-        xmax = int(box[2] / ((640 - delta_w) / image.shape[1]))
-        ymax = int(box[3] / ((640 - delta_h) / image.shape[0]))
+        xmin = int(box[0] / ((size[1] - delta_w) / image.shape[1]))
+        ymin = int(box[1] / ((size[0] - delta_h) / image.shape[0]))
+        xmax = int(box[2] / ((size[1] - delta_w) / image.shape[1]))
+        ymax = int(box[3] / ((size[0] - delta_h) / image.shape[0]))
         print( f"Bbox {i} Class: {classId}, Confidence: {confidence}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
 
         # 绘制框
@@ -219,13 +217,14 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, image: np.ndarray,
     return image
 
 
-def get_boxes(detections: list, delta_w: int,delta_h: int, shape: np.ndarray) -> list:
+def get_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], shape: np.ndarray) -> list:
     """将框还原到原图尺寸
 
     Args:
         detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为float类型
         delta_w (int):      填充的宽
         delta_h (int):      填充的高
+        size (list[int]):   推理 h w 640, 640
         shape (np.ndarray): (h, w)
 
     Returns:
@@ -238,10 +237,10 @@ def get_boxes(detections: list, delta_w: int,delta_h: int, shape: np.ndarray) ->
 
     for detection in detections:
         # 还原到原图尺寸并转化为int                                          shape: (h, w)
-        detection["box"][0] = int(detection["box"][0] / ((640 - delta_w) / shape[1]))    # xmin
-        detection["box"][1] = int(detection["box"][1] / ((640 - delta_h) / shape[0]))    # ymin
-        detection["box"][2] = int(detection["box"][2] / ((640 - delta_w) / shape[1]))    # xmax
-        detection["box"][3] = int(detection["box"][3] / ((640 - delta_h) / shape[0]))    # ymax
+        detection["box"][0] = int(detection["box"][0] / ((size[1] - delta_w) / shape[1]))    # xmin
+        detection["box"][1] = int(detection["box"][1] / ((size[0] - delta_h) / shape[0]))    # ymin
+        detection["box"][2] = int(detection["box"][2] / ((size[1] - delta_w) / shape[1]))    # xmax
+        detection["box"][3] = int(detection["box"][3] / ((size[0] - delta_h) / shape[0]))    # ymax
 
     return detections
 

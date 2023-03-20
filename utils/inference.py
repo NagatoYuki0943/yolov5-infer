@@ -10,13 +10,14 @@ class Inference(ABC):
         raise NotImplementedError
 
 
-def single(inference: Inference, image_path: str, index2name: dict, confidence_threshold: float,
+def single(inference: Inference, image_path: str, size: list[int], index2name: dict, confidence_threshold: float,
            score_threshold: float, nms_threshold: float, save_path: str, openvino_preprocess=False):
     """单张图片推理
 
     Args:
         inference (OrtInference):       推力器
         image_path (str):               图片路径
+        size (list[int]):               推理 h w
         index2name (dict):              index2name
         confidence_threshold (float):   只有得分大于置信度的预测框会被保留下来,越大越严格
         score_threshold (float):        框的得分置信度,越大越严格
@@ -26,7 +27,8 @@ def single(inference: Inference, image_path: str, index2name: dict, confidence_t
     """
 
     # 1. 获取图片,缩放的图片,扩展的宽高
-    image, image_reized, delta_w ,delta_h = get_image(image_path)
+    image_rgb = get_image(image_path)
+    image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, size)
     input_array = transform(image_reized, openvino_preprocess)
 
     t1 = time.time()
@@ -40,7 +42,7 @@ def single(inference: Inference, image_path: str, index2name: dict, confidence_t
     detections = boxes[0][0]    # [25200, 85]
     detections = nms(detections, confidence_threshold, score_threshold, nms_threshold)
     t3 = time.time()
-    image = figure_boxes(detections, delta_w ,delta_h, image, index2name)
+    image = figure_boxes(detections, delta_w ,delta_h, size, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR), index2name)
     # image = get_boxes(detections, delta_w ,delta_h, image.shape) # shape: (h, w)
     t4 = time.time()
     print(f"infer time: {int((t2-t1) * 1000)} ms, nms time: {int((t3-t2) * 1000)} ms, figure time: {int((t4-t3) * 1000)} ms")
@@ -49,13 +51,14 @@ def single(inference: Inference, image_path: str, index2name: dict, confidence_t
     cv2.imwrite(save_path, image)
 
 
-def multi(inference: Inference, image_dir: str, index2name: dict, confidence_threshold: float,
+def multi(inference: Inference, image_dir: str, size: list[int], index2name: dict, confidence_threshold: float,
            score_threshold: float, nms_threshold: float, save_dir: str, openvino_preprocess=False):
     """单张图片推理
 
     Args:
         inference (OrtInference):       推力器
         image_dir (str):                图片文件夹路径
+        size (list[int]):               推理 h w 640, 640
         index2name (dict):              index2name
         confidence_threshold (float):   只有得分大于置信度的预测框会被保留下来,越大越严格
         score_threshold (float):        框的得分置信度,越大越严格
@@ -80,7 +83,8 @@ def multi(inference: Inference, image_dir: str, index2name: dict, confidence_thr
         image_path = os.path.join(image_dir, image_file)
 
         # 3. 获取图片,缩放的图片,扩展的宽高
-        image, image_reized, delta_w ,delta_h = get_image(image_path)
+        image_rgb = get_image(image_path)
+        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, size)
         input_array = transform(image_reized, openvino_preprocess)
 
         t1 = time.time()
@@ -94,7 +98,7 @@ def multi(inference: Inference, image_dir: str, index2name: dict, confidence_thr
         detections = boxes[0][0]    # [25200, 85]
         detections = nms(detections, confidence_threshold, score_threshold, nms_threshold)
         t3 = time.time()
-        image = figure_boxes(detections, delta_w ,delta_h, image, index2name)
+        image = figure_boxes(detections, delta_w ,delta_h, size, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR), index2name)
         t4 = time.time()
 
         # 6. 记录时间

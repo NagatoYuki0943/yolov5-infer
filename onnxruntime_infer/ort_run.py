@@ -143,10 +143,10 @@ if __name__ == "__main__":
     # 实例化推理器
     inference = OrtInference(ONNX_PATH, y["size"], "cpu")
     # 单张图片推理
-    single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
+    single(inference, IMAGE_PATH, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
 
     # 多张图片推理
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
-    # multi(inference, IMAGE_DIR, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
-    # avg infer time: 77.4296875 ms, avg nms time: 19.59375 ms, avg figure time: 0.0 ms
+    # multi(inference, IMAGE_DIR, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
+    # avg infer time: 74.71875 ms, avg nms time: 19.8984375 ms, avg figure time: 0.0 ms

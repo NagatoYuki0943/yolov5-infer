@@ -160,10 +160,10 @@ if __name__ == "__main__":
     # 实例化推理器
     inference = TensorRTInfer(ENGINE_PATH, y["size"])
     # 单张图片推理
-    single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
+    single(inference, IMAGE_PATH, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
 
     # 多张图片推理
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
-    # multi(inference, IMAGE_DIR, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
-    # avg infer time: 63.09375 ms, avg nms time: 13.453125 ms, avg figure time: 0.0 ms
+    # multi(inference, IMAGE_DIR, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
+    # avg infer time: 7.890625 ms, avg nms time: 12.578125 ms, avg figure time: 0.0 ms

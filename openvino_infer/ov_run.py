@@ -150,10 +150,10 @@ if __name__ == "__main__":
     # 实例化推理器
     inference = OVInference(OPENVINO_PATH, y["size"], "CPU", OPENVINO_PREPROCESS)
     # 单张图片推理
-    single(inference, IMAGE_PATH, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH, OPENVINO_PREPROCESS)
+    single(inference, IMAGE_PATH, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH, OPENVINO_PREPROCESS)
 
     # 多张图片推理
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
-    # multi(inference, IMAGE_DIR, index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR, OPENVINO_PREPROCESS)
-    # avg infer time: 60.09375 ms, avg nms time: 15.046875 ms, avg figure time: 0.0 ms
+    # multi(inference, IMAGE_DIR, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR, OPENVINO_PREPROCESS)
+    # avg infer time: 52.8671875 ms, avg nms time: 12.8828125 ms, avg figure time: 0.0 ms
