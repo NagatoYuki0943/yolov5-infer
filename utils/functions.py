@@ -128,24 +128,47 @@ def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: fl
         detections (list): 经过mns处理的框 [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}]
     """
     # t1 = time.time()
-    boxes = []  # [[xmin, ymin, w, h]]
-    class_ids = []
-    confidences = []
-    for prediction in detections:
-        confidence = prediction[4].item()           # 是否有物体得分
-        if confidence >= confidence_threshold:      # 是否有物体预支
-            classes_scores = prediction[5:]         # 取出所有类别id
-            class_id = np.argmax(classes_scores)    # 找到概率最大的id
-            if (classes_scores[class_id] > .25):    # 最大概率必须大于 0.25
-                confidences.append(confidence)      # 保存置信度(注意保存的是confidence，不是classes_scores[class_id]),类别id,box
-                class_ids.append(class_id)
-                # center_x, center_y, w, h
-                x, y, w, h = prediction[0].item(), prediction[1].item(), prediction[2].item(), prediction[3].item()
-                xmin = x - (w / 2)
-                ymin = y - (h / 2)
-                box = [xmin, ymin, w, h]
-                boxes.append(box)
+    # boxes = []  # [[xmin, ymin, w, h]]
+    # class_ids = []
+    # confidences = []
+    # for prediction in detections:
+    #     confidence = prediction[4].item()           # 是否有物体得分
+    #     if confidence >= confidence_threshold:      # 是否有物体预支
+    #         classes_scores = prediction[5:]         # 取出所有类别id
+    #         class_id = np.argmax(classes_scores)    # 找到概率最大的id
+    #         if (classes_scores[class_id] > .25):    # 最大概率必须大于 0.25
+    #             confidences.append(confidence)      # 保存置信度(注意保存的是confidence，不是classes_scores[class_id]),类别id,box
+    #             class_ids.append(class_id)
+    #             # center_x, center_y, w, h
+    #             x, y, w, h = prediction[0].item(), prediction[1].item(), prediction[2].item(), prediction[3].item()
+    #             xmin = x - (w / 2)
+    #             ymin = y - (h / 2)
+    #             box = [xmin, ymin, w, h]
+    #             boxes.append(box)
     # t2 = time.time()
+
+    # 加速优化写法
+    # 通过置信度过滤一部分框
+    detections = detections[detections[:, 4] > confidence_threshold]
+    # 置信度
+    confidence = detections[:, 4]
+    # 位置坐标
+    loc = detections[:, :4]
+    # 分类
+    cls = detections[:, 5:]
+    # 最大分类index
+    max_index = cls.argmax(axis=-1)
+    # 最大分类score
+    max_cls_score = cls.max(axis=-1)
+    # 置信度
+    confidences = confidence[max_cls_score > .25]
+    # 类别index
+    class_ids = max_index[max_cls_score > .25]
+    # 位置
+    boxes = loc[max_cls_score > .25]
+    # center_x, center_y, w, h
+    boxes[:, 0] -= boxes[:, 2] / 2
+    boxes[:, 1] -= boxes[:, 3] / 2
 
     # nms
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold, nms_threshold)
