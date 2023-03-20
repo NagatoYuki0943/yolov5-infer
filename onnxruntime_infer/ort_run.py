@@ -6,7 +6,8 @@ sys.path.append("../")
 
 import onnxruntime as ort
 import numpy as np
-from utils import Inference, check_onnx, load_yaml, single, multi
+import cv2
+from utils import Inference, check_onnx, get_image
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
@@ -23,24 +24,22 @@ print("ort devices:", ort.get_device())
 
 
 class OrtInference(Inference):
-    def __init__(self, model_path: str, size: list[int], mode: str="cpu") -> None:
+    def __init__(self, model_path: str, mode: str="cpu", **kwargs) -> None:
         """
         Args:
             model_path (str): 模型路径
             size (list[int]): 推理图片大小 [H, W]
             mode (str, optional): cpu cuda tensorrt. Defaults to cpu.
         """
-        super().__init__()
+        super().__init__(**kwargs)
         # 1.检测onnx模型
         check_onnx(model_path)
-        # 2.保存图片宽高
-        self.size = size
-        # 3.载入模型
+        # 2.载入模型
         self.model = self.get_model(model_path, mode)
-        # 4.获取模型收入输出
+        # 3.获取模型收入输出
         self.inputs = self.model.get_inputs()
         self.outputs = self.model.get_outputs()
-        # 5.预热模型
+        # 4.预热模型
         self.warm_up()
 
     def get_model(self, onnx_path: str, mode: str="cpu") -> ort.InferenceSession:
@@ -90,6 +89,8 @@ class OrtInference(Inference):
                 ]
         }[mode]
 
+        self.openvino_preprocess = False    # TODO: 更好的方式将openvino_preprocess在不使用openvino时设置为False
+
         model = ort.InferenceSession(onnx_path, sess_options=so, providers=providers)
 
         #--------------------------------#
@@ -114,7 +115,7 @@ class OrtInference(Inference):
         """预热模型
         """
         # [B, C, H, W]
-        x = np.zeros((1, 3, *self.size), dtype=np.float32)
+        x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
         self.infer(x)
         print("warmup finish")
 
@@ -133,21 +134,27 @@ class OrtInference(Inference):
 
 
 if __name__ == "__main__":
-    YAML_PATH  = "../weights/yolov5.yaml"
     ONNX_PATH  = "../weights/yolov5s.onnx"
+    config = {
+        'yaml_path':            "../weights/yolov5.yaml",
+        'confidence_threshold': CONFIDENCE_THRESHOLD,
+        'score_threshold':      SCORE_THRESHOLD,
+        'nms_threshold':        NMS_THRESHOLD,
+    }
+
+    # 实例化推理器
+    inference = OrtInference(model_path=ONNX_PATH, mode="cpu", **config)
+
+    # 单张图片推理
     IMAGE_PATH = "../images/bus.jpg"
     SAVE_PATH  = "./ort_det.jpg"
-
-    # 获取label
-    y = load_yaml(YAML_PATH)
-    index2name = y["names"]
-    # 实例化推理器
-    inference = OrtInference(ONNX_PATH, y["size"], "cpu")
-    # 单张图片推理
-    single(inference, IMAGE_PATH, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
+    image_rgb = get_image(IMAGE_PATH)
+    res = inference.single(image_rgb)
+    cv2.imwrite(SAVE_PATH, res)
+    print(inference.single_get_boxes(image_rgb))
 
     # 多张图片推理
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
-    # multi(inference, IMAGE_DIR, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
+    # inference.multi(IMAGE_DIR, SAVE_DIR)
     # avg infer time: 74.71875 ms, avg nms time: 19.8984375 ms, avg figure time: 0.0 ms

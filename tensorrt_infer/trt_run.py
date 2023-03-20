@@ -4,6 +4,7 @@ import sys
 sys.path.append("../")
 
 import numpy as np
+import cv2
 import tensorrt as trt
 import pycuda.driver as cuda
 
@@ -15,30 +16,30 @@ try:
 except ModuleNotFoundError:
     import pycuda.autoinit
 
-from utils import load_yaml, single, multi
+from utils import Inference, get_image
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
 SCORE_THRESHOLD      = 0.2  # nms分类得分阈值,越大越严格
 NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
 
 
-class TensorRTInfer:
+class TensorRTInfer(Inference):
     """
     Implements inference for the EfficientDet TensorRT engine.
     """
 
-    def __init__(self, engine_path: str, size: list[int]):
+    def __init__(self, model_path: str, **kwargs):
         """
-        :param engine_path(str): The path to the serialized engine to load from disk.
-        size (list[int]): 推理图片大小 [H, W]
+        :param model_path (str): The path to the serialized engine to load from disk.
         """
-        # infer size
-        self.size = size
+        super().__init__(**kwargs)
+
+        self.openvino_preprocess = False    # TODO: 更好的方式将openvino_preprocess在不使用openvino时设置为False
 
         # Load TRT engine
         self.logger = trt.Logger(trt.Logger.ERROR)
         trt.init_libnvinfer_plugins(self.logger, namespace="")
-        with open(engine_path, "rb") as f, trt.Runtime(self.logger) as runtime:
+        with open(model_path, "rb") as f, trt.Runtime(self.logger) as runtime:
             assert runtime
             self.engine = runtime.deserialize_cuda_engine(f.read())
         assert self.engine
@@ -143,27 +144,33 @@ class TensorRTInfer:
         """预热模型
         """
         # [B, C, H, W]
-        x = np.zeros((1, 3, *self.size), dtype=np.float32)
+        x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
         self.infer(x)
         print("warmup finish")
 
 
 if __name__ == "__main__":
-    YAML_PATH    = "../weights/yolov5.yaml"
     ENGINE_PATH  = "../weights/yolov5s.engine"
+    config = {
+        'yaml_path':            "../weights/yolov5.yaml",
+        'confidence_threshold': CONFIDENCE_THRESHOLD,
+        'score_threshold':      SCORE_THRESHOLD,
+        'nms_threshold':        NMS_THRESHOLD,
+    }
+
+    # 实例化推理器
+    inference = TensorRTInfer(ENGINE_PATH, **config)
+
+    # 单张图片推理
     IMAGE_PATH   = "../images/bus.jpg"
     SAVE_PATH    = "./trt_det.jpg"
-
-    # 获取label
-    y = load_yaml(YAML_PATH)
-    index2name = y["names"]
-    # 实例化推理器
-    inference = TensorRTInfer(ENGINE_PATH, y["size"])
-    # 单张图片推理
-    single(inference, IMAGE_PATH, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH)
+    image_rgb = get_image(IMAGE_PATH)
+    res = inference.single(image_rgb)
+    cv2.imwrite(SAVE_PATH, res)
+    print(inference.single_get_boxes(image_rgb))
 
     # 多张图片推理
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
-    # multi(inference, IMAGE_DIR, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR)
+    # inference.multi(IMAGE_DIR, SAVE_DIR)
     # avg infer time: 7.890625 ms, avg nms time: 12.578125 ms, avg figure time: 0.0 ms
