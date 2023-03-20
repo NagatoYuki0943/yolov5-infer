@@ -10,6 +10,21 @@ import colorsys
 from pathlib import Path
 
 
+def load_yaml(yaml_path: str) -> dict:
+    """通过id找到名称
+
+    Args:
+        yaml_path (str): yaml文件路径
+
+    Returns:
+        yaml (dict)
+    """
+    with open(yaml_path, 'r', encoding='utf-8') as f:
+        y = yaml.load(f, Loader=yaml.FullLoader)
+
+    return y
+
+
 def get_image(image_path: str):
     """获取图像
 
@@ -109,38 +124,47 @@ def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: fl
     Args:
         detections (np.ndarray): 检测到的数据 [25200, 85]
         confidence_threshold (float): prediction[4] 是否有物体得分阈值
-        score_threshold (float):      分类得分阈值
+        score_threshold (float):      nms分类得分阈值
         nms_threshold (float):        非极大值抑制iou阈值
 
     Returns:
-        list: 经过mns处理的框
+        detections (list): 经过mns处理的框 [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}]
     """
-    boxes = []
+    # t1 = time.time()
+    boxes = []  # [[xmin, ymin, w, h]]
     class_ids = []
     confidences = []
     for prediction in detections:
-        confidence = prediction[4].item()
-        if confidence >= confidence_threshold:
-            classes_scores = prediction[5:]
-            _, _, _, max_indx = cv2.minMaxLoc(classes_scores)
-            class_id = max_indx[1]
-            if (classes_scores[class_id] > .25):
-                confidences.append(confidence)
+        confidence = prediction[4].item()           # 是否有物体得分
+        if confidence >= confidence_threshold:      # 是否有物体预支
+            classes_scores = prediction[5:]         # 取出所有类别id
+            class_id = np.argmax(classes_scores)    # 找到概率最大的id
+            if (classes_scores[class_id] > .25):    # 最大概率必须大于 0.25
+                confidences.append(confidence)      # 保存置信度(注意保存的是confidence，不是classes_scores[class_id]),类别id,box
                 class_ids.append(class_id)
-                # 不是0~1之间的数据
+                # center_x, center_y, w, h
                 x, y, w, h = prediction[0].item(), prediction[1].item(), prediction[2].item(), prediction[3].item()
                 xmin = x - (w / 2)
                 ymin = y - (h / 2)
-                box = np.array([xmin, ymin, w, h])
+                box = [xmin, ymin, w, h]
                 boxes.append(box)
+    # t2 = time.time()
 
     # nms
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold, nms_threshold)
+    # t3 = time.time()
 
+    # 根据nms返回的id获取对应的类别,置信度,box
     detections = []
     for i in indexes:
         j = i.item()
+        boxes[j][2] += boxes[j][0] # w -> xmax
+        boxes[j][3] += boxes[j][1] # h -> ymax
         detections.append({"class_index": class_ids[j], "confidence": confidences[j], "box": boxes[j]})
+    # t4 = time.time()
+
+    # print((t2 - t1)*1000, (t3 - t2)*1000, (t4 - t3)*1000)
+    # 16.954421997070312 0.0 0.0 主要时间花在了遍历所有的框上面
 
     return detections
 
@@ -149,10 +173,10 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, image: np.ndarray,
     """将框画到原图
 
     Args:
-        detections (list):  经过mns处理的框
+        detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为float类型
         delta_w (int):      填充的宽
         delta_h (int):      填充的高
-        image (np.ndarray):   原图
+        image (np.ndarray): 原图
         index2label (dict): id2label
 
     Returns:
@@ -171,45 +195,55 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, image: np.ndarray,
         box = detection["box"]
         classId = detection["class_index"]
         confidence = detection["confidence"]
-        print( f"Bbox {i} Class: {classId} Confidence: {confidence}, Scaled coords: [ cx: {(box[0] + (box[2] / 2)) / image.shape[1]}, cy: {(box[1] + (box[3] / 2)) / image.shape[0]}, w: {box[2]/ image.shape[1]}, h: {box[3] / image.shape[0]} ]" )
 
-        # 还原到原图尺寸                                       origin
-        box[0] = box[0] / ((640-delta_w) / image.shape[1])    # center_x  xmin
-        box[2] = box[2] / ((640-delta_w) / image.shape[1])    # center_y  ymin
-        box[1] = box[1] / ((640-delta_h) / image.shape[0])    # w         w
-        box[3] = box[3] / ((640-delta_h) / image.shape[0])    # h         h
+        # 还原到原图尺寸并转化为int                    shape: (h, w)
+        xmin = int(box[0] / ((640 - delta_w) / image.shape[1]))
+        ymin = int(box[1] / ((640 - delta_h) / image.shape[0]))
+        xmax = int(box[2] / ((640 - delta_w) / image.shape[1]))
+        ymax = int(box[3] / ((640 - delta_h) / image.shape[0]))
+        print( f"Bbox {i} Class: {classId}, Confidence: {confidence}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
 
-        xmax = box[0] + box[2]
-        ymax = box[1] + box[3]
         # 绘制框
-        image = cv2.rectangle(image, (int(box[0]), int(box[1])), (int(xmax), int(ymax)), colors[classId], 1)
+        image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 1)
         # 直接在原图上绘制文字背景，不透明
-        # image = cv2.rectangle(image, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
+        # image = cv2.rectangle(image, (xmin, ymin - 20), (xmax, ymax)), colors[classId], cv2.FILLED)
         # 添加文字背景
         temp_image = np.zeros(image.shape).astype(np.uint8)
-        temp_image = cv2.rectangle(temp_image, (int(box[0]), int(box[1]) - 20), (int(xmax), int(box[1])), colors[classId], cv2.FILLED)
+        temp_image = cv2.rectangle(temp_image, (xmin, ymin - 20), (xmax, ymin), colors[classId], cv2.FILLED)
         # 叠加原图和文字背景，文字背景是透明的
         image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
         # 添加文字
         image = cv2.putText(image, str(index2label[classId]) + " " + "{:.2f}".format(confidence),
-                          (int(box[0]), int(box[1]) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+                           (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
     return image
 
 
-def load_yaml(yaml_path: str) -> dict:
-    """通过id找到名称
+def get_boxes(detections: list, delta_w: int,delta_h: int, shape: np.ndarray) -> list:
+    """将框还原到原图尺寸
 
     Args:
-        yaml_path (str): yaml文件路径
+        detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为float类型
+        delta_w (int):      填充的宽
+        delta_h (int):      填充的高
+        shape (np.ndarray): (h, w)
 
     Returns:
-        yaml (dict)
+        detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
     """
-    with open(yaml_path, 'r', encoding='utf-8') as f:
-        y = yaml.load(f, Loader=yaml.FullLoader)
+    if len(detections) == 0:
+        print("no detection")
+        # 返回原图
+        return []
 
-    return y
+    for detection in detections:
+        # 还原到原图尺寸并转化为int                                          shape: (h, w)
+        detection["box"][0] = int(detection["box"][0] / ((640 - delta_w) / shape[1]))    # xmin
+        detection["box"][1] = int(detection["box"][1] / ((640 - delta_h) / shape[0]))    # ymin
+        detection["box"][2] = int(detection["box"][2] / ((640 - delta_w) / shape[1]))    # xmax
+        detection["box"][3] = int(detection["box"][3] / ((640 - delta_h) / shape[0]))    # ymax
+
+    return detections
 
 
 if __name__ == "__main__":

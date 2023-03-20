@@ -10,7 +10,7 @@ from utils import Inference, load_yaml, single, multi
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD      = 0.2  # 框的得分置信度,越大越严格
+SCORE_THRESHOLD      = 0.2  # nms分类得分阈值,越大越严格
 NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
 
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     YAML_PATH     = "../weights/yolov5.yaml"
     OPENVINO_PATH = "../weights/yolov5s_openvino_model/yolov5s.xml"
     IMAGE_PATH    = "../images/bus.jpg"
-    SAVE_PATH     = "./ov_det.png"
+    SAVE_PATH     = "./ov_det.jpg"
     OPENVINO_PREPROCESS = True
 
     # 获取label

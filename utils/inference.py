@@ -34,13 +34,14 @@ def single(inference: Inference, image_path: str, index2name: dict, confidence_t
     boxes = inference.infer(input_array)
     t2 = time.time()
 
-    print(boxes[0].shape)       # [1, 25200, 85]
+    # print(boxes[0].shape)       # [1, 25200, 85]
 
     # 3. Postprocessing including NMS
     detections = boxes[0][0]    # [25200, 85]
     detections = nms(detections, confidence_threshold, score_threshold, nms_threshold)
     t3 = time.time()
     image = figure_boxes(detections, delta_w ,delta_h, image, index2name)
+    # image = get_boxes(detections, delta_w ,delta_h, image.shape) # shape: (h, w)
     t4 = time.time()
     print(f"infer time: {int((t2-t1) * 1000)} ms, nms time: {int((t3-t2) * 1000)} ms, figure time: {int((t4-t3) * 1000)} ms")
 

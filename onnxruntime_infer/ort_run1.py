@@ -13,7 +13,7 @@ from utils import get_image, transform, check_onnx, nms, figure_boxes, load_yaml
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD      = 0.2  # 框的得分置信度,越大越严格
+SCORE_THRESHOLD      = 0.2  # nms分类得分阈值,越大越严格
 NMS_THRESHOLD        = 0.45 # 非极大抑制所用到的nms_iou大小,越小越严格
 
 
@@ -86,7 +86,7 @@ def inference():
     end = time.time()
     print(f'time: {int((end - start) * 1000)} ms')
 
-    cv2.imwrite("./ort_det.png", image)
+    cv2.imwrite("./ort_det.jpg", image)
 
 
 if __name__ == "__main__":
