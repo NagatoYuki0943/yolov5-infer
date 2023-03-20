@@ -6,7 +6,8 @@ from openvino.preprocess import PrePostProcessor
 from openvino.preprocess import ColorFormat
 from openvino.runtime import Layout, Type
 import numpy as np
-from utils import Inference, load_yaml, single, multi
+import cv2
+from utils import Inference, get_image
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
@@ -34,29 +35,25 @@ ppp.output().model().set_layout()
 
 
 class OVInference(Inference):
-    def __init__(self, model_path: str, size: list[int], mode: str = 'CPU', openvino_preprocess: bool = False) -> None:
+    def __init__(self, model_path: str, mode: str = 'CPU', **kwargs) -> None:
         """
         Args:
             model_path (str): 模型路径
             size (list[int]): 推理图片大小 [H, W]
             mode (str, optional): CPU or GPU or GPU.0  Defaults to CPU. 具体可以使用设备可以运行 samples/python/hello_query_device/hello_query_device.py 文件查看
-            openvino_preprocess (bool, optional): 是否使用openvino数据预处理. Defaults to False.
+
         """
-        super().__init__()
-        self.openvino_preprocess = openvino_preprocess
-        # 1.保存图片宽高
-        self.size = size
-        # 2.载入模型
+        super().__init__(**kwargs)
+        # 1.载入模型
         self.model = self.get_model(model_path, mode.upper())
-        # 3.保存模型输入输出
+        # 2.保存模型输入输出
         self.inputs  = self.model.inputs
         self.outputs = self.model.outputs
         # print(f"inputs: {self.inputs}")   # inputs: [<ConstOutput: names[images] shape[1,3,640,640] type: f32>]
         # print(f"outputs: {self.outputs}") # outputs: [<ConstOutput: names[output0] shape[1,25200,85] type: f32>
 
-        # 4.预热模型
+        # 3.预热模型
         self.warm_up()
-
 
     def get_model(self, model_path: str, mode: str='CPU') -> ov.CompiledModel:
         """获取模型
@@ -105,7 +102,7 @@ class OVInference(Inference):
         """预热模型
         """
         # [B, C, H, W]
-        x = np.zeros((1, 3, *self.size), dtype=np.float32)
+        x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
         self.infer(x)
         print("warmup finish")
 
@@ -138,22 +135,27 @@ class OVInference(Inference):
 
 
 if __name__ == "__main__":
-    YAML_PATH     = "../weights/yolov5.yaml"
     OPENVINO_PATH = "../weights/yolov5s_openvino_model/yolov5s.xml"
-    IMAGE_PATH    = "../images/bus.jpg"
-    SAVE_PATH     = "./ov_det.jpg"
-    OPENVINO_PREPROCESS = True
-
-    # 获取label
-    y = load_yaml(YAML_PATH)
-    index2name = y["names"]
+    config = {
+        'yaml_path':            "../weights/yolov5.yaml",
+        'confidence_threshold': CONFIDENCE_THRESHOLD,
+        'score_threshold':      SCORE_THRESHOLD,
+        'nms_threshold':        NMS_THRESHOLD,
+        'openvino_preprocess':  True,
+    }
     # 实例化推理器
-    inference = OVInference(OPENVINO_PATH, y["size"], "CPU", OPENVINO_PREPROCESS)
+    inference = OVInference(OPENVINO_PATH, "CPU", **config)
+
     # 单张图片推理
-    single(inference, IMAGE_PATH, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_PATH, OPENVINO_PREPROCESS)
+    IMAGE_PATH = "../images/bus.jpg"
+    SAVE_PATH  = "./ov_det.jpg"
+    image_rgb = get_image(IMAGE_PATH)
+    res = inference.single(image_rgb)
+    cv2.imwrite(SAVE_PATH, res)
+    print(inference.single_get_boxes(image_rgb))
 
     # 多张图片推理
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
-    # multi(inference, IMAGE_DIR, y["size"], index2name, CONFIDENCE_THRESHOLD, SCORE_THRESHOLD, NMS_THRESHOLD, SAVE_DIR, OPENVINO_PREPROCESS)
+    # inference.multi(IMAGE_DIR, SAVE_DIR)
     # avg infer time: 52.8671875 ms, avg nms time: 12.8828125 ms, avg figure time: 0.0 ms
