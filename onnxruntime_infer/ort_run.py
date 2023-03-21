@@ -129,8 +129,9 @@ class OrtInference(Inference):
 
 
 if __name__ == "__main__":
-    ONNX_PATH  = "../weights/yolov5s.onnx"
     config = {
+        'model_path':           "../weights/yolov5s.onnx",
+        'mode':                 "cpu",
         'yaml_path':            "../weights/yolov5.yaml",
         'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
         'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
@@ -138,7 +139,7 @@ if __name__ == "__main__":
     }
 
     # 实例化推理器
-    inference = OrtInference(model_path=ONNX_PATH, mode="cpu", **config)
+    inference = OrtInference(**config)
 
     # 单张图片推理
     IMAGE_PATH = "../images/bus.jpg"

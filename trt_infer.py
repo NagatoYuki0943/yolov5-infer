@@ -3,8 +3,8 @@ from utils import get_image
 import cv2
 
 
-ENGINE_PATH  = "./weights/yolov5s.engine"
 config = {
+    'model_path':           "./weights/yolov5s.engine",
     'yaml_path':            "./weights/yolov5.yaml",
     'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
     'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
@@ -12,7 +12,7 @@ config = {
 }
 
 # 实例化推理器
-inference = TensorRTInfer(model_path=ENGINE_PATH, **config)
+inference = TensorRTInfer(**config)
 
 # 读取图片
 IMAGE_PATH = "./images/bus.jpg"
