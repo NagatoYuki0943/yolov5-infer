@@ -153,4 +153,4 @@ if __name__ == "__main__":
     IMAGE_DIR = "../../datasets/coco128/images/train2017"
     SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
     # inference.multi(IMAGE_DIR, SAVE_DIR)
-    # avg infer time: 74.71875 ms, avg nms time: 19.8984375 ms, avg figure time: 0.0 ms
+    # avg transform time: 9.40625 ms, avg infer time: 71.7421875 ms, avg nms time: 0.0078125 ms, avg figure time: 0.0 ms
