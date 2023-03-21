@@ -125,9 +125,9 @@ def nms(detections: np.ndarray, confidence_threshold: float=0.25, score_threshol
         nms_threshold (float, optional):        非极大值抑制iou阈值. Defaults to 0.45.
 
     Returns:
-        np.ndarray:
+        (np.ndarray): np.float32
             [
-                [class_index, confidences, xmin, ymin, xmax, ymax], np.float32
+                [class_index, confidences, xmin, ymin, xmax, ymax],
                 ...
             ]
     """
@@ -199,9 +199,9 @@ def figure_boxes(detections: np.ndarray, delta_w: int,delta_h: int, size: list[i
     """将框画到原图
 
     Args:
-        detections (list):
+        detections (np.ndarray): np.float32
                 [
-                    [class_index, confidences, xmin, ymin, xmax, ymax], np.float32
+                    [class_index, confidences, xmin, ymin, xmax, ymax],
                     ...
                 ]
         delta_w (int):      填充的宽
@@ -250,13 +250,13 @@ def figure_boxes(detections: np.ndarray, delta_w: int,delta_h: int, size: list[i
     return image
 
 
-def get_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], shape: np.ndarray) -> list:
+def get_boxes(detections: np.ndarray, delta_w: int,delta_h: int, size: list[int], shape: np.ndarray) -> list:
     """将框还原到原图尺寸
 
     Args:
-        detections (list):
+        detections (np.ndarray): np.float32
                 [
-                    [class_index, confidences, xmin, ymin, xmax, ymax], np.float32
+                    [class_index, confidences, xmin, ymin, xmax, ymax],
                     ...
                 ]
         delta_w (int):      填充的宽
