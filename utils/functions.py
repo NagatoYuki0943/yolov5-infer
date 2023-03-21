@@ -115,22 +115,26 @@ def check_onnx(onnx_path):
         print("Model correct")
 
 
-def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: float, nms_threshold: float) -> list:
+def nms(detections: np.ndarray, confidence_threshold: float=0.25, score_threshold: float=0.2, nms_threshold: float=0.45) -> np.ndarray:
     """后处理
 
     Args:
-        detections (np.ndarray): 检测到的数据 [25200, 85]
-        confidence_threshold (float): prediction[4] 是否有物体得分阈值
-        score_threshold (float):      nms分类得分阈值
-        nms_threshold (float):        非极大值抑制iou阈值
+        detections (np.ndarray):                检测到的数据 [25200, 85]
+        confidence_threshold (float, optional): prediction[4] 是否有物体得分阈值. Defaults to 0.25.
+        score_threshold (float, optional):      nms分类得分阈值. Defaults to 0.2.
+        nms_threshold (float, optional):        非极大值抑制iou阈值. Defaults to 0.45.
 
     Returns:
-        detections (list): 经过mns处理的框 [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}]
+        np.ndarray:
+            [
+                [class_index, confidences, xmin, ymin, xmax, ymax], np.float32
+                ...
+            ]
     """
-    # t1 = time.time()
     # boxes = []  # [[xmin, ymin, w, h]]
     # class_ids = []
     # confidences = []
+    # 循环25200次,很慢,大约12ms
     # for prediction in detections:
     #     confidence = prediction[4].item()           # 是否有物体得分
     #     if confidence >= confidence_threshold:      # 是否有物体预支
@@ -145,55 +149,61 @@ def nms(detections: np.ndarray, confidence_threshold: float, score_threshold: fl
     #             ymin = y - (h / 2)
     #             box = [xmin, ymin, w, h]
     #             boxes.append(box)
-    # t2 = time.time()
 
     # 加速优化写法
     # 通过置信度过滤一部分框
     detections = detections[detections[:, 4] > confidence_threshold]
-    # 置信度
-    confidence = detections[:, 4]
     # 位置坐标
     loc = detections[:, :4]
+    # 置信度
+    confidences = detections[:, 4]
     # 分类
     cls = detections[:, 5:]
     # 最大分类index
-    max_index = cls.argmax(axis=-1)
+    max_cls_index = cls.argmax(axis=-1)
     # 最大分类score
     max_cls_score = cls.max(axis=-1)
     # 置信度
-    confidences = confidence[max_cls_score > .25]
+    confidences = confidences[max_cls_score > .25]
     # 类别index
-    class_ids = max_index[max_cls_score > .25]
+    class_index = max_cls_index[max_cls_score > .25]
     # 位置
     boxes = loc[max_cls_score > .25]
-    # center_x, center_y, w, h
+    # [center_x, center_y, w, h] -> [x_min, y_min, w, h]
     boxes[:, 0] -= boxes[:, 2] / 2
     boxes[:, 1] -= boxes[:, 3] / 2
 
     # nms
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold, nms_threshold)
-    # t3 = time.time()
 
     # 根据nms返回的id获取对应的类别,置信度,box
-    detections = []
-    for i in indexes:
-        j = i.item()
-        boxes[j][2] += boxes[j][0] # w -> xmax
-        boxes[j][3] += boxes[j][1] # h -> ymax
-        detections.append({"class_index": class_ids[j], "confidence": confidences[j], "box": boxes[j]})
-    # t4 = time.time()
+    # detections = []
+    # for i in indexes:
+    #     j = i.item()
+    #     boxes[j][2] += boxes[j][0] # w -> xmax
+    #     boxes[j][3] += boxes[j][1] # h -> ymax
+    #     detections.append({"class_index": class_index[j], "confidence": confidences[j], "box": boxes[j]})
 
-    # print((t2 - t1)*1000, (t3 - t2)*1000, (t4 - t3)*1000)
-    # 16.954421997070312 0.0 0.0 主要时间花在了遍历所有的框上面
+    boxes[indexes, 2] += boxes[indexes, 0]  # w -> xmax
+    boxes[indexes, 3] += boxes[indexes, 1]  # h -> ymax
+    # [
+    #   [class_index, confidences, xmin, ymin, xmax, ymax],
+    #   ...
+    # ]
+    detections = np.concatenate((np.expand_dims(class_index[indexes], 1), np.expand_dims(confidences[indexes], 1), boxes[indexes]), axis=-1)
 
     return detections
 
 
-def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], image: np.ndarray, index2name: dict) -> np.ndarray:
+def figure_boxes(detections: np.ndarray, delta_w: int,delta_h: int, size: list[int], image: np.ndarray, index2name: dict) -> np.ndarray:
     """将框画到原图
 
     Args:
-        detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为float类型
+        detections (list):
+                [
+                    [class_index, confidences, xmin, ymin, xmax, ymax], np.float32
+                    ...
+                ]
         delta_w (int):      填充的宽
         delta_h (int):      填充的高
         size (list[int]):   推理 h w 640, 640
@@ -213,9 +223,9 @@ def figure_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], i
 
     # Print results and save Figure with detections
     for i, detection in enumerate(detections):
-        box = detection["box"]
-        classId = detection["class_index"]
-        confidence = detection["confidence"]
+        classId = int(detection[0])
+        confidence = detection[1]
+        box = detection[2:]
 
         # 还原到原图尺寸并转化为int                    shape: (h, w)
         xmin = int(box[0] / ((size[1] - delta_w) / image.shape[1]))
@@ -244,28 +254,35 @@ def get_boxes(detections: list, delta_w: int,delta_h: int, size: list[int], shap
     """将框还原到原图尺寸
 
     Args:
-        detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为float类型
+        detections (list):
+                [
+                    [class_index, confidences, xmin, ymin, xmax, ymax], np.float32
+                    ...
+                ]
         delta_w (int):      填充的宽
         delta_h (int):      填充的高
         size (list[int]):   推理 h w 640, 640
         shape (np.ndarray): (h, w)
 
     Returns:
-        detections (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
+        res (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
     """
     if len(detections) == 0:
         print("no detection")
         # 返回原图
         return []
 
+    res = []
     for detection in detections:
+        box = [None] * 4
         # 还原到原图尺寸并转化为int                                          shape: (h, w)
-        detection["box"][0] = int(detection["box"][0] / ((size[1] - delta_w) / shape[1]))    # xmin
-        detection["box"][1] = int(detection["box"][1] / ((size[0] - delta_h) / shape[0]))    # ymin
-        detection["box"][2] = int(detection["box"][2] / ((size[1] - delta_w) / shape[1]))    # xmax
-        detection["box"][3] = int(detection["box"][3] / ((size[0] - delta_h) / shape[0]))    # ymax
+        box[0] = int(detection[2] / ((size[1] - delta_w) / shape[1]))    # xmin
+        box[1] = int(detection[3] / ((size[0] - delta_h) / shape[0]))    # ymin
+        box[2] = int(detection[4] / ((size[1] - delta_w) / shape[1]))    # xmax
+        box[3] = int(detection[5] / ((size[0] - delta_h) / shape[0]))    # ymax
+        res.append({"class_index": int(detection[0]), "confidence": detection[1], "box": box})
 
-    return detections
+    return res
 
 
 if __name__ == "__main__":
