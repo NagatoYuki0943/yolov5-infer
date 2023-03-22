@@ -95,7 +95,7 @@ def parse_opt():
 
 ### tensorrt
 
-```shell
+```sh
 python export.py --weights weights/yolov5s.pt --include engine --device 0 --half
 ```
 
@@ -105,7 +105,7 @@ python export.py --weights weights/yolov5s.pt --include engine --device 0 --half
 
 > 先通过yolov5导出onnx，再通过 `trtexec.exe` 导出 engine
 
-```powershell
+```sh
 r> trtexec --help
 &&&& RUNNING TensorRT.trtexec [TensorRT v8503] # D:\code\TensorRT\bin\trtexec.exe --help
 === Model Options ===
@@ -286,7 +286,7 @@ r> trtexec --help
 
 > 导出
 
-```powershell
+```sh
 trtexec --onnx=yolov5s.onnx --saveEngine=yolov5s.engine --fp16	# Enable fp16 precision, in addition to fp32
 trtexec --onnx=yolov5s.onnx --saveEngine=yolov5s.engine --int8	# Enable int8 precision, in addition to fp32
 trtexec --onnx=yolov5s.onnx --saveEngine=yolov5s.engine --best	# Enable all precisions to achieve the best performance

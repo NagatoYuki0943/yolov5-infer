@@ -103,7 +103,7 @@ def parse_opt():
 
 ### openvino
 
-```python
+```sh
 python export.py --weights weights/yolov5s.pt --include openvino
 ```
 
@@ -129,11 +129,11 @@ python export.py --weights weights/yolov5s.pt --include openvino
 
 > https://docs.openvino.ai/latest/notebooks/102-pytorch-onnx-to-openvino-with-output.html
 
-```
+```sh
 mo --input_model "onnx_path" --output_dir "output_path" --compress_to_fp16
 ```
 
-```shell
+```sh
 > mo --help
 usage: main.py [options]
 
@@ -257,5 +257,29 @@ Kaldi-specific parameters:
   --remove_output_softmax
                         Removes the SoftMax layer that is the output layer
   --remove_memory       Removes the Memory layer and use additional inputs outputs instead
+```
+
+## 代码方式
+
+```python
+from openvino.tools import mo
+from openvino.runtime import serialize
+
+onnx_path = "onnx_path"
+
+# fp32 IR model
+fp32_path = "fp32_path"
+output_path = fp32_path + ".xml"
+print(f"Export ONNX to OpenVINO FP32 IR to: {output_path}")
+model = mo.convert_model(onnx_path)
+serialize(model, output_path)
+
+# fp16 IR model
+fp16_path = "fp16_path"
+output_path = fp16_path + ".xml"
+
+print(f"Export ONNX to OpenVINO FP16 IR to: {output_path}")
+model = mo.convert_model(onnx_path, compress_to_fp16=True)
+serialize(model, output_path)
 ```
 

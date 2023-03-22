@@ -90,7 +90,7 @@ def parse_opt():
 
 ### onnx
 
-```shell
+```sh
 python export.py --weights weights/yolov5s.pt --include onnx --simplify
 ```
 
