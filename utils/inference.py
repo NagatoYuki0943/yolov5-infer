@@ -70,13 +70,13 @@ class Inference(ABC):
         # 4. 返回图片
         return image
 
-    def single_get_boxes(self, image_rgb: np.ndarray) -> np.ndarray:
+    def single_get_boxes(self, image_rgb: np.ndarray) -> list:
         """单张图片推理
         Args:
             image_path (str):   图片路径
 
         Returns:
-            np.ndarray: 绘制好的图片
+            res (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
         """
 
         # 1. 缩放的图片,扩展的宽高
