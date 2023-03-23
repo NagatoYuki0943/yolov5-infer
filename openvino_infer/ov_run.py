@@ -146,8 +146,8 @@ if __name__ == "__main__":
     IMAGE_PATH = "../images/bus.jpg"
     SAVE_PATH  = "./ov_det.jpg"
     image_rgb = get_image(IMAGE_PATH)
-    res = inference.single(image_rgb)
-    cv2.imwrite(SAVE_PATH, res)
+    image_bgr_detect = inference.single(image_rgb)
+    cv2.imwrite(SAVE_PATH, image_bgr_detect)
     print(inference.single_get_boxes(image_rgb))
 
     # 多张图片推理

@@ -12,7 +12,7 @@ class Inference(ABC):
                  nms_threshold: float,
                  openvino_preprocess=False,
                  ) -> None:
-        """推力器
+        """父类推理器
 
         Args:
             yaml_path (str):                配置文件路径

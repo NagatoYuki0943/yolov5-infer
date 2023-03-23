@@ -21,8 +21,8 @@ IMAGE_PATH = "./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-res = inference.single(image_rgb)
-cv2.imshow("res", res)
+image_bgr_detect = inference.single(image_rgb)
+cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
 print(inference.single_get_boxes(image_rgb))
 

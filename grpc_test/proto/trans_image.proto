@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package trans_image;
+
+// 服务定义，这个就是我们在程序中要定义的类了，类名就是data
+service TransImage {
+    // 函数定义 data_request参数 data_reply返回数据,这个就是在服务器要实现的方法了，是个函数
+    rpc trans (DataRquest) returns (DataResponse) {}
+}
+
+//数据类型，其实我只要一个就可以了
+message DataRquest {
+    string image = 1;
+}
+
+message DataResponse {
+    // 后面的 1 2 3代表顺序,顺序必须从1开始,并且不可重复
+    string image = 1;
+    string detect = 2;
+}
+
+// 在上级目录使用命令: python -m grpc_tools.protoc -I./proto --python_out=. --grpc_python_out=. proto/trans_image.proto
+
