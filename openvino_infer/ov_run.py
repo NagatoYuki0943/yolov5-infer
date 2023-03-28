@@ -131,9 +131,9 @@ class OVInference(Inference):
 
 if __name__ == "__main__":
     config = {
-        'model_path':           "../weights/yolov5s_openvino_model/yolov5s.xml",
-        'mode':                 "CPU",
-        'yaml_path':            "../weights/yolov5.yaml",
+        'model_path':           r"../weights/yolov5s_openvino_model/yolov5s.xml",
+        'mode':                 r"CPU",
+        'yaml_path':            r"../weights/yolov5.yaml",
         'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
         'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
         'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
@@ -143,15 +143,15 @@ if __name__ == "__main__":
     inference = OVInference(**config)
 
     # 单张图片推理
-    IMAGE_PATH = "../images/bus.jpg"
-    SAVE_PATH  = "./ov_det.jpg"
+    IMAGE_PATH = r"../images/bus.jpg"
+    SAVE_PATH  = r"./ov_det.jpg"
     image_rgb = get_image(IMAGE_PATH)
     image_bgr_detect = inference.single(image_rgb)
     cv2.imwrite(SAVE_PATH, image_bgr_detect)
     print(inference.single_get_boxes(image_rgb))
 
     # 多张图片推理
-    IMAGE_DIR = "../../datasets/coco128/images/train2017"
-    SAVE_DIR  = "../../datasets/coco128/images/train2017_res"
+    IMAGE_DIR = r"../../datasets/coco128/images/train2017"
+    SAVE_DIR  = r"../../datasets/coco128/images/train2017_res"
     # inference.multi(IMAGE_DIR, SAVE_DIR)
     # avg transform time: 3.65625 ms, avg infer time: 43.3828125 ms, avg nms time: 0.0390625 ms, avg figure time: 0.0 ms
