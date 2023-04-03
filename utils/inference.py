@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import os
+from collections import Counter
 from .functions import *
 
 
 class Inference(ABC):
     def __init__(self,
                  yaml_path: str,
-                 confidence_threshold: float,
-                 score_threshold: float,
-                 nms_threshold: float,
+                 confidence_threshold: float=0.25,
+                 score_threshold: float=0.2,
+                 nms_threshold: float=0.45,
                  openvino_preprocess=False,
                  ) -> None:
         """父类推理器
@@ -27,6 +28,7 @@ class Inference(ABC):
         self.nms_threshold        = nms_threshold
         self.openvino_preprocess  = openvino_preprocess
 
+
     @abstractmethod
     def infer(self, image: np.ndarray) -> list[np.ndarray]:
         """推理图片
@@ -38,6 +40,137 @@ class Inference(ABC):
             list[np.ndarray]: 推理结果
         """
         raise NotImplementedError
+
+
+    def nms(self, detections: np.ndarray) -> np.ndarray:
+        """后处理
+
+        Args:
+            detections (np.ndarray):                检测到的数据 [25200, 85]
+
+        Returns:
+            (np.ndarray): np.float32
+                [
+                    [class_index, confidences, xmin, ymin, xmax, ymax],
+                    ...
+                ]
+        """
+        # boxes = []  # [[xmin, ymin, w, h]]
+        # class_ids = []
+        # confidences = []
+        # 循环25200次,很慢,大约12ms
+        # for prediction in detections:
+        #     confidence = prediction[4].item()           # 是否有物体得分
+        #     if confidence >= self.confidence_threshold: # 是否有物体预支
+        #         classes_scores = prediction[5:]         # 取出所有类别id
+        #         class_id = np.argmax(classes_scores)    # 找到概率最大的id
+        #         if (classes_scores[class_id] > .25):    # 最大概率必须大于 0.25
+        #             confidences.append(confidence)      # 保存置信度(注意保存的是confidence，不是classes_scores[class_id]),类别id,box
+        #             class_ids.append(class_id)
+        #             # center_x, center_y, w, h
+        #             x, y, w, h = prediction[0].item(), prediction[1].item(), prediction[2].item(), prediction[3].item()
+        #             xmin = x - (w / 2)
+        #             ymin = y - (h / 2)
+        #             box = [xmin, ymin, w, h]
+        #             boxes.append(box)
+
+        # 加速优化写法
+        # 通过置信度过滤一部分框
+        detections = detections[detections[:, 4] > self.confidence_threshold]
+        # 位置坐标
+        loc = detections[:, :4]
+        # 置信度
+        confidences = detections[:, 4]
+        # 分类
+        cls = detections[:, 5:]
+        # 最大分类index
+        max_cls_index = cls.argmax(axis=-1)
+        # 最大分类score
+        max_cls_score = cls.max(axis=-1)
+        # 置信度
+        confidences = confidences[max_cls_score > .25]
+        # 类别index
+        class_index = max_cls_index[max_cls_score > .25]
+        # 位置
+        boxes = loc[max_cls_score > .25]
+        # [center_x, center_y, w, h] -> [x_min, y_min, w, h]
+        boxes[:, 0] -= boxes[:, 2] / 2
+        boxes[:, 1] -= boxes[:, 3] / 2
+
+        # nms
+        indexes = cv2.dnn.NMSBoxes(boxes, confidences, self.score_threshold, self.nms_threshold)
+
+        # 根据nms返回的id获取对应的类别,置信度,box
+        # detections = []
+        # for i in indexes:
+        #     j = i.item()
+        #     boxes[j][2] += boxes[j][0] # w -> xmax
+        #     boxes[j][3] += boxes[j][1] # h -> ymax
+        #     detections.append({"class_index": class_index[j], "confidence": confidences[j], "box": boxes[j]})
+
+        boxes[indexes, 2] += boxes[indexes, 0]  # w -> xmax
+        boxes[indexes, 3] += boxes[indexes, 1]  # h -> ymax
+        # [
+        #   [class_index, confidences, xmin, ymin, xmax, ymax],
+        #   ...
+        # ]
+        detections = np.concatenate((np.expand_dims(class_index[indexes], 1), np.expand_dims(confidences[indexes], 1), boxes[indexes]), axis=-1)
+
+        return detections
+
+
+    def figure_boxes(self, detections: np.ndarray, delta_w: int,delta_h: int, image: np.ndarray) -> np.ndarray:
+        """将框画到原图
+
+        Args:
+            detections (np.ndarray): np.float32
+                    [
+                        [class_index, confidences, xmin, ymin, xmax, ymax],
+                        ...
+                    ]
+            delta_w (int):      填充的宽
+            delta_h (int):      填充的高
+            image (np.ndarray): 原图
+
+        Returns:
+            np.ndarray: 绘制的图
+        """
+        if len(detections) == 0:
+            print("no detection")
+            # 返回原图
+            return image
+
+        # 获取不同颜色
+        colors = mulit_colors(len(self.config["names"].keys()))
+
+        # Print results and save Figure with detections
+        for i, detection in enumerate(detections):
+            classId = int(detection[0])
+            confidence = detection[1]
+            box = detection[2:]
+
+            # 还原到原图尺寸并转化为int                    shape: (h, w)
+            xmin = int(box[0] / ((self.config["size"][1] - delta_w) / image.shape[1]))
+            ymin = int(box[1] / ((self.config["size"][0] - delta_h) / image.shape[0]))
+            xmax = int(box[2] / ((self.config["size"][1] - delta_w) / image.shape[1]))
+            ymax = int(box[3] / ((self.config["size"][0] - delta_h) / image.shape[0]))
+            print( f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
+
+            # 绘制框
+            image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 1)
+            # 直接在原图上绘制文字背景，不透明
+            # image = cv2.rectangle(image, (xmin, ymin - 20), (xmax, ymax)), colors[classId], cv2.FILLED)
+            # 添加文字背景
+            temp_image = np.zeros(image.shape).astype(np.uint8)
+            temp_image = cv2.rectangle(temp_image, (xmin, ymin - 20), (xmax, ymin), colors[classId], cv2.FILLED)
+            # 叠加原图和文字背景，文字背景是透明的
+            image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
+            # 添加文字
+            image = cv2.putText(image, str(self.config["names"][classId]) + " " + "{:.2f}".format(confidence),
+                            (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+
+        return image
+
 
     def single(self, image_rgb: np.ndarray) -> np.ndarray:
         """单张图片推理
@@ -61,14 +194,54 @@ class Inference(ABC):
         # 3. Postprocessing including NMS
         t3 = time.time()
         detections = boxes[0][0]    # [25200, 85]
-        detections = nms(detections, self.confidence_threshold, self.score_threshold, self.nms_threshold)
+        detections = self.nms(detections)
         t4 = time.time()
-        image = figure_boxes(detections, delta_w ,delta_h, self.config["size"], cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR), self.config["names"])
+        image = self.figure_boxes(detections, delta_w ,delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
         t5 = time.time()
         print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
 
         # 4. 返回图片
         return image
+
+
+    def get_boxes(self, detections: np.ndarray, delta_w: int,delta_h: int, shape: np.ndarray) -> list:
+        """返回还原到原图的框
+
+        Args:
+            detections (np.ndarray): np.float32
+                    [
+                        [class_index, confidences, xmin, ymin, xmax, ymax],
+                        ...
+                    ]
+            delta_w (int):      填充的宽
+            delta_h (int):      填充的高
+            shape (np.ndarray): (h, w)
+
+        Returns:
+            res (list):  [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
+        """
+        if len(detections) == 0:
+            print("no detection")
+            # 返回原图
+            return []
+
+        detect = {}
+        count = []
+        res = []
+        for detection in detections:
+            count.append(self.config["names"][int(detection[0])])   # 计数
+            box = [None] * 4
+            # 还原到原图尺寸并转化为int                                          shape: (h, w)
+            box[0] = int(detection[2] / ((self.config["size"][1] - delta_w) / shape[1]))    # xmin
+            box[1] = int(detection[3] / ((self.config["size"][0] - delta_h) / shape[0]))    # ymin
+            box[2] = int(detection[4] / ((self.config["size"][1] - delta_w) / shape[1]))    # xmax
+            box[3] = int(detection[5] / ((self.config["size"][0] - delta_h) / shape[0]))    # ymax
+            res.append({"class_index": int(detection[0]), "class": self.config["names"][int(detection[0])], "confidence": detection[1], "box": box})
+        detect["detect"] = res
+        # 类别计数
+        detect["num"] = Counter(count)
+        return detect
+
 
     def single_get_boxes(self, image_rgb: np.ndarray) -> list:
         """单张图片推理
@@ -92,15 +265,16 @@ class Inference(ABC):
         # 3. Postprocessing including NMS
         t3 = time.time()
         detections = boxes[0][0]    # [25200, 85]
-        detections = nms(detections, self.confidence_threshold, self.score_threshold, self.nms_threshold)
+        detections = self.nms(detections)
         t4 = time.time()
-        boxes = get_boxes(detections, delta_w ,delta_h, self.config["size"], image_rgb.shape) # shape: (h, w)
+        boxes = self.get_boxes(detections, delta_w ,delta_h, image_rgb.shape) # shape: (h, w)
         t5 = time.time()
 
         print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, get boxes time: {int((t5-t4) * 1000)} ms")
 
         # 4. 返回boxes
         return boxes
+
 
     def multi(self, image_dir: str, save_dir: str):
         """单张图片推理
@@ -141,9 +315,9 @@ class Inference(ABC):
             # 5. Postprocessing including NMS
             t3 = time.time()
             detections = boxes[0][0]    # [25200, 85]
-            detections = nms(detections, self.confidence_threshold, self.score_threshold, self.nms_threshold)
+            detections = self.nms(detections)
             t4 = time.time()
-            image = figure_boxes(detections, delta_w ,delta_h, self.config["size"], cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR), self.config["names"])
+            image = self.figure_boxes(detections, delta_w ,delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
             t5 = time.time()
 
             # 6. 记录时间
