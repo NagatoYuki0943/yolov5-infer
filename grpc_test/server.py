@@ -8,9 +8,16 @@ from concurrent import futures
 import base64
 import trans_image_pb2
 import trans_image_pb2_grpc
+
 import sys
+from funcs import json2xml
 sys.path.append("../")
 from onnxruntime_infer import OrtInference
+
+
+SERVER_SAVE_PATH = "server"
+os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
+SAVE = True # 是否保存图片和xml
 
 
 class Server(trans_image_pb2_grpc.TransImageServicer):
@@ -32,14 +39,19 @@ class Server(trans_image_pb2_grpc.TransImageServicer):
         # 再解码成图片 三维图片
         image_bgr = cv2.imdecode(array, cv2.IMREAD_COLOR)
         print("image shape:", image_bgr.shape)
-        cv2.imwrite("images/server_origin.jpg", image_bgr)
 
         #=====================预测图片=====================#
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         image_bgr_detect = self.inference.single(image_rgb)         # 推理返回绘制的图片
         detect: dict = self.inference.single_get_boxes(image_rgb)   # 推理返回框的数据,一般只需要一个推理即可
         detect["image_size"] = image_rgb.shape # 添加 [h, w, c]
-        cv2.imwrite("images/server_detect.jpg", image_bgr_detect)
+
+        #================保存图片和检测结果=======-=========#
+        if SAVE:
+            file_name = str(time.time())
+            cv2.imwrite(os.path.join(SERVER_SAVE_PATH, file_name + ".jpg"), image_bgr)
+            # 保存检测结果
+            json2xml(detect, SERVER_SAVE_PATH, file_name)
 
         #=====================编码图片=====================#
         # 返回True和编码,这里只要编码

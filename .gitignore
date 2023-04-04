@@ -3,4 +3,5 @@ __pycache__
 *.onnx
 *.engine
 weights/*openvino*/
-grpc_test/images/*
+grpc_test/client/*
+grpc_test/server/*

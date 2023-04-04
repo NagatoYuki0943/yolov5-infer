@@ -225,8 +225,8 @@ class Inference(ABC):
             # 返回原图
             return []
 
-        detect = {}
-        count = []
+        detect = {} # 结果返回一个dict
+        count = []  # 类别计数
         res = []
         for detection in detections:
             count.append(self.config["names"][int(detection[0])])   # 计数
