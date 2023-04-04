@@ -46,7 +46,7 @@ class Server(trans_image_pb2_grpc.TransImageServicer):
         detect: dict = self.inference.single_get_boxes(image_rgb)   # 推理返回框的数据,一般只需要一个推理即可
         detect["image_size"] = image_rgb.shape # 添加 [h, w, c]
 
-        #================保存图片和检测结果=======-=========#
+        #================保存图片和检测结果=================#
         if SAVE:
             file_name = str(time.time())
             cv2.imwrite(os.path.join(SERVER_SAVE_PATH, file_name + ".jpg"), image_bgr)
