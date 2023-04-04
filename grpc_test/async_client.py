@@ -5,8 +5,8 @@ import grpc
 import base64
 import pickle
 import json
-import trans_image_pb2
-import trans_image_pb2_grpc
+import object_detect_pb2
+import object_detect_pb2_grpc
 import asyncio
 
 
@@ -29,14 +29,14 @@ async def run():
     # 异步要用 aio
     async with grpc.aio.insecure_channel("localhost:50054") as channel:
         # 客户端实例
-        stub = trans_image_pb2_grpc.TransImageStub(channel)
+        stub = object_detect_pb2_grpc.YoloDetectStub(channel)
 
         #=================发送并接收新图片==================#
-        # trans是proto中service TransImage中的rpc trans
-        #                                                image是DataRquest中设定的变量
-        response = await stub.trans(trans_image_pb2.DataRquest(image=image_64))
+        # V5Detect是proto中service YoloDetect中的rpc V5Detect
+        #                                                        image是Request中设定的变量
+        response = await stub.V5Detect(object_detect_pb2.Request(image=image_64))
 
-    # 解码图片                                image是DataResponse中设定的变量
+    # 解码图片                                image是Response中设定的变量
     image_decode = base64.b64decode(response.image)
     # 变成一个矩阵 单维向量
     array = np.frombuffer(image_decode, dtype=np.uint8)
@@ -45,7 +45,7 @@ async def run():
     print(image.shape, image.dtype)
     cv2.imwrite(os.path.join(CLIENT_SAVE_PATH, "bus.jpg"), image)
 
-    # 解码检测结果                           result是DataResponse中设定的变量
+    # 解码检测结果                             detect是Response中设定的变量
     detect_decode = base64.b64decode(response.detect)
     detect_res = pickle.loads(detect_decode)
     with open(os.path.join(CLIENT_SAVE_PATH, "detect.json"), mode="w", encoding="utf-8") as f:

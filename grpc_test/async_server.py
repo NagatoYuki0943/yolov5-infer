@@ -6,8 +6,8 @@ import grpc
 import pickle
 from concurrent import futures
 import base64
-import trans_image_pb2
-import trans_image_pb2_grpc
+import object_detect_pb2
+import object_detect_pb2_grpc
 import asyncio
 import sys
 from funcs import json2xml
@@ -20,18 +20,18 @@ os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
 SAVE = True # 是否保存图片和xml
 
 
-class Server(trans_image_pb2_grpc.TransImageServicer):
+class Server(object_detect_pb2_grpc.YoloDetectServicer):
     def __init__(self, inference) -> None:
         super().__init__()
         self.inference = inference
 
-    async def trans(self, request: trans_image_pb2.DataRquest,
-                    context: grpc.aio.ServicerContext)-> trans_image_pb2.DataResponse:
+    async def V5Detect(self, request: object_detect_pb2.Request,
+                    context: grpc.aio.ServicerContext)-> object_detect_pb2.Response:
         """接收request,返回response
-        trans是proto中service TransImage中的rpc trans
+        V5Detect是proto中service YoloDetecte中的rpc V5Detect
         """
         #=====================接收图片=====================#
-        # 解码图片                               image是DataRquest中设定的变量
+        # 解码图片                               image是Request中设定的变量
         image_decode = base64.b64decode(request.image)
         # 变成一个矩阵 单维向量
         array = np.frombuffer(image_decode, dtype=np.uint8)
@@ -66,8 +66,8 @@ class Server(trans_image_pb2_grpc.TransImageServicer):
         detect_64 = base64.b64encode(pickle_detect)
 
         #==================返回图片和结果===================#
-        #                                   image和result是DataResponse中设定的变量
-        return trans_image_pb2.DataResponse(image=image_64, detect=detect_64)
+        #                                 image和detect是Response中设定的变量
+        return object_detect_pb2.Response(image=image_64, detect=detect_64)
 
 
 def get_inference():
@@ -96,7 +96,7 @@ async def run():
                                   ('grpc.max_receive_message_length', 100 * 1024 * 1024)]
                             )
     # 绑定处理器
-    trans_image_pb2_grpc.add_TransImageServicer_to_server(Server(get_inference()), server)
+    object_detect_pb2_grpc.add_YoloDetectServicer_to_server(Server(get_inference()), server)
 
     # 绑定地址
     server.add_insecure_port("localhost:50054")
