@@ -91,9 +91,12 @@ def mulit_colors(num_classes: int):
     #   https://github.com/bubbliiiing/yolov8-pytorch/blob/master/yolo.py#L88
     #   画框设置不同的颜色
     #---------------------------------------------------#
-    hsv_tuples = [(x / num_classes, 1., 1.) for x in range(num_classes)]
-    colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-    colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
+    #              hue saturation value
+    hsv_tuples = [(x / num_classes, 0.6, 1.) for x in range(num_classes)]
+    # colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
+    colors = [colorsys.hsv_to_rgb(*x) for x in hsv_tuples]
+    # colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
+    colors = [(int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)) for x in colors]
     return colors
 
 

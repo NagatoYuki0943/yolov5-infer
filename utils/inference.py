@@ -157,7 +157,7 @@ class Inference(ABC):
             print( f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
 
             # 绘制框
-            image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 1)
+            image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 2)
             # 直接在原图上绘制文字背景，不透明
             # image = cv2.rectangle(image, (xmin, ymin - 20), (xmax, ymax)), colors[classId], cv2.FILLED)
             # 添加文字背景
@@ -166,8 +166,15 @@ class Inference(ABC):
             # 叠加原图和文字背景，文字背景是透明的
             image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
             # 添加文字
-            image = cv2.putText(image, str(self.config["names"][classId]) + " " + "{:.2f}".format(confidence),
-                            (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+            image = cv2.putText(img         = image,
+                                text        = str(self.config["names"][classId]) + " " + "{:.2f}".format(confidence),
+                                org         = (xmin, ymin - 5),
+                                fontFace    = 0,
+                                fontScale   = 0.5,
+                                color       = (0, 0, 0),
+                                thickness   = 1,
+                                lineType    = cv2.LINE_AA,
+                                )
 
         return image
 
