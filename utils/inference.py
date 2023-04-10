@@ -94,8 +94,7 @@ class Inference(ABC):
         # 位置
         boxes = loc[max_cls_score > .25]
         # [center_x, center_y, w, h] -> [x_min, y_min, w, h]
-        boxes[:, 0] -= boxes[:, 2] / 2
-        boxes[:, 1] -= boxes[:, 3] / 2
+        boxes[:, 0:2] -= boxes[:, 2:4] / 2
 
         # nms
         indexes = cv2.dnn.NMSBoxes(boxes, confidences, self.score_threshold, self.nms_threshold)
@@ -108,13 +107,22 @@ class Inference(ABC):
         #     boxes[j][3] += boxes[j][1] # h -> ymax
         #     detections.append({"class_index": class_index[j], "confidence": confidences[j], "box": boxes[j]})
 
-        boxes[indexes, 2] += boxes[indexes, 0]  # w -> xmax
-        boxes[indexes, 3] += boxes[indexes, 1]  # h -> ymax
+        boxes = boxes[indexes]
+
+        # [x_min, y_min, w, h] -> [x_min, y_min, x_max, y_max]
+        boxes[:, 2:4] += boxes[:, 0:2]
+
+        # 防止框超出图片边界, 前面判断为True/False,后面选择更改的列,不选择更改的列会将整行都改为0
+        boxes[boxes[:, 0] < 0.0, 0] = 0
+        boxes[boxes[:, 1] < 0.0, 1] = 0
+        boxes[boxes[:, 2] > self.config["size"][1], 2] = self.config["size"][1]
+        boxes[boxes[:, 3] > self.config["size"][0], 3] = self.config["size"][0]
+
         # [
         #   [class_index, confidences, xmin, ymin, xmax, ymax],
         #   ...
         # ]
-        detections = np.concatenate((np.expand_dims(class_index[indexes], 1), np.expand_dims(confidences[indexes], 1), boxes[indexes]), axis=-1)
+        detections = np.concatenate((np.expand_dims(class_index[indexes], 1), np.expand_dims(confidences[indexes], 1), boxes), axis=-1)
 
         return detections
 
@@ -179,38 +187,6 @@ class Inference(ABC):
         return image
 
 
-    def single(self, image_rgb: np.ndarray) -> np.ndarray:
-        """单张图片推理
-        Args:
-            image_rgb (np.ndarray):   rgb图片
-
-        Returns:
-            np.ndarray: 绘制好的图片
-        """
-
-        # 1. 缩放图片,扩展的宽高
-        t1 = time.time()
-        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["size"])
-        input_array = transform(image_reized, self.openvino_preprocess)
-
-        # 2. 推理
-        t2 = time.time()
-        boxes = self.infer(input_array)
-        # print(boxes[0].shape)       # [1, 25200, 85]
-
-        # 3. Postprocessing including NMS
-        t3 = time.time()
-        detections = boxes[0][0]    # [25200, 85]
-        detections = self.nms(detections)
-        t4 = time.time()
-        image = self.figure_boxes(detections, delta_w ,delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
-        t5 = time.time()
-        print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
-
-        # 4. 返回图片
-        return image
-
-
     def get_boxes(self, detections: np.ndarray, delta_w: int,delta_h: int, shape: np.ndarray) -> list:
         """返回还原到原图的框
 
@@ -246,8 +222,40 @@ class Inference(ABC):
             res.append({"class_index": int(detection[0]), "class": self.config["names"][int(detection[0])], "confidence": detection[1], "box": box})
         detect["detect"] = res
         # 类别计数
-        detect["num"] = Counter(count)
+        detect["num"] = dict(Counter(count))
         return detect
+
+
+    def single(self, image_rgb: np.ndarray) -> np.ndarray:
+        """单张图片推理
+        Args:
+            image_rgb (np.ndarray):   rgb图片
+
+        Returns:
+            np.ndarray: 绘制好的图片
+        """
+
+        # 1. 缩放图片,扩展的宽高
+        t1 = time.time()
+        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["size"])
+        input_array = transform(image_reized, self.openvino_preprocess)
+
+        # 2. 推理
+        t2 = time.time()
+        boxes = self.infer(input_array)
+        # print(boxes[0].shape)       # [1, 25200, 85]
+
+        # 3. Postprocessing including NMS
+        t3 = time.time()
+        detections = boxes[0][0]    # [25200, 85]
+        detections = self.nms(detections)
+        t4 = time.time()
+        image = self.figure_boxes(detections, delta_w ,delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+        t5 = time.time()
+        print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
+
+        # 4. 返回图片
+        return image
 
 
     def single_get_boxes(self, image_rgb: np.ndarray) -> list:
