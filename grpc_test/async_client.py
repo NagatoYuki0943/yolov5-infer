@@ -10,6 +10,7 @@ import object_detect_pb2_grpc
 import asyncio
 
 
+SERVER_HOST = "localhost:50054"
 CLIENT_SAVE_PATH = "client"
 os.makedirs(CLIENT_SAVE_PATH, exist_ok=True)
 
@@ -27,7 +28,7 @@ async def run():
 
     # 本次不使用SSL，所以channel是不安全的
     # 异步要用 aio
-    async with grpc.aio.insecure_channel("localhost:50054") as channel:
+    async with grpc.aio.insecure_channel(SERVER_HOST) as channel:
         # 客户端实例
         stub = object_detect_pb2_grpc.YoloDetectStub(channel)
 

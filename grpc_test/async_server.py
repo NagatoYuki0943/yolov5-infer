@@ -15,6 +15,7 @@ sys.path.append("../")
 from onnxruntime_infer import OrtInference
 
 
+SERVER_HOST = "localhost:50054"
 SERVER_SAVE_PATH = "server"
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
 SAVE = True # 是否保存图片和xml
@@ -99,9 +100,9 @@ async def run():
     object_detect_pb2_grpc.add_YoloDetectServicer_to_server(Server(get_inference()), server)
 
     # 绑定地址
-    server.add_insecure_port("localhost:50054")
+    server.add_insecure_port(SERVER_HOST)
     await server.start()
-    print('gRPC 服务端已开启，端口为50054...')
+    print(f'gRPC 服务端已开启，地址为 {SERVER_HOST}...')
     await server.wait_for_termination()
 
 

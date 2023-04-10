@@ -10,6 +10,7 @@ import object_detect_pb2_grpc
 
 
 
+SERVER_HOST = "localhost:50054"
 CLIENT_SAVE_PATH = "client"
 os.makedirs(CLIENT_SAVE_PATH, exist_ok=True)
 
@@ -26,7 +27,7 @@ def run():
     image_64 = base64.b64encode(image_encode)
 
     # 本次不使用SSL，所以channel是不安全的
-    with grpc.insecure_channel("localhost:50054") as channel:
+    with grpc.insecure_channel(SERVER_HOST) as channel:
         # 客户端实例
         stub = object_detect_pb2_grpc.YoloDetectStub(channel)
 
