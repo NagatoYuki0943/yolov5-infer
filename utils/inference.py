@@ -127,7 +127,7 @@ class Inference(ABC):
         return detections
 
 
-    def figure_boxes(self, detections: np.ndarray, delta_w: int,delta_h: int, image: np.ndarray) -> np.ndarray:
+    def figure_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, image: np.ndarray) -> np.ndarray:
         """将框画到原图
 
         Args:
@@ -187,7 +187,7 @@ class Inference(ABC):
         return image
 
 
-    def get_boxes(self, detections: np.ndarray, delta_w: int,delta_h: int, shape: np.ndarray) -> list:
+    def get_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, shape: np.ndarray) -> dict:
         """返回还原到原图的框
 
         Args:
@@ -198,16 +198,18 @@ class Inference(ABC):
                     ]
             delta_w (int):      填充的宽
             delta_h (int):      填充的高
-            shape (np.ndarray): (h, w)
+            shape (np.ndarray): (h, w, c)
 
         Returns:
-            res (list):  [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
+            detect (dict):  {
+                            "detect":     [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}...],    box为int类型
+                            "num":        {"Person": 4, "Bus": 1},
+                            "image_size": [height, width, Channel]
+                            }
         """
         if len(detections) == 0:
             print("no detection")
-            # 返回原图
-            return []
-
+            return {"detect": [], "num": {}, "image_size": shape}
         detect = {} # 结果返回一个dict
         count = []  # 类别计数
         res = []
@@ -223,6 +225,8 @@ class Inference(ABC):
         detect["detect"] = res
         # 类别计数
         detect["num"] = dict(Counter(count))
+        # 图片形状
+        detect["image_size"] = shape # 添加 (h, w, c)
         return detect
 
 
@@ -250,7 +254,7 @@ class Inference(ABC):
         detections = boxes[0][0]    # [25200, 85]
         detections = self.nms(detections)
         t4 = time.time()
-        image = self.figure_boxes(detections, delta_w ,delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+        image = self.figure_boxes(detections, delta_w, delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
         t5 = time.time()
         print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
 
@@ -258,13 +262,17 @@ class Inference(ABC):
         return image
 
 
-    def single_get_boxes(self, image_rgb: np.ndarray) -> list:
+    def single_get_boxes(self, image_rgb: np.ndarray) -> dict:
         """单张图片推理
         Args:
             image_path (str):   图片路径
 
         Returns:
-            res (list):  [{"class_index": class_index, "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}， {}] box为int类型
+            detect (dict):  {
+                            "detect":     [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}...],    box为int类型
+                            "num":        {"Person": 4, "Bus": 1},
+                            "image_size": [height, width, Channel]
+                            }
         """
 
         # 1. 缩放的图片,扩展的宽高
@@ -282,13 +290,13 @@ class Inference(ABC):
         detections = boxes[0][0]    # [25200, 85]
         detections = self.nms(detections)
         t4 = time.time()
-        boxes = self.get_boxes(detections, delta_w ,delta_h, image_rgb.shape) # shape: (h, w)
+        detect = self.get_boxes(detections, delta_w, delta_h, image_rgb.shape) # shape: (h, w, c)
         t5 = time.time()
 
         print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, get boxes time: {int((t5-t4) * 1000)} ms")
 
-        # 4. 返回boxes
-        return boxes
+        # 4. 返回detect
+        return detect
 
 
     def multi(self, image_dir: str, save_dir: str):
@@ -332,7 +340,7 @@ class Inference(ABC):
             detections = boxes[0][0]    # [25200, 85]
             detections = self.nms(detections)
             t4 = time.time()
-            image = self.figure_boxes(detections, delta_w ,delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+            image = self.figure_boxes(detections, delta_w, delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
             t5 = time.time()
 
             # 6. 记录时间

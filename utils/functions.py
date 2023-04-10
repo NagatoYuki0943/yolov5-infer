@@ -118,8 +118,56 @@ def check_onnx(onnx_path):
         print("Model correct")
 
 
+def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:
+    array -= np.max(array)
+    array = np.exp(array)
+    print(array)
+    return array / np.sum(array, axis=axis)
+
+
+def ignore_some(detections: np.ndarray, shape: np.ndarray) -> np.ndarray:
+    """忽略一些框
+
+    Args:
+        detections (np.ndarray): np.float32
+                [
+                    [class_index, confidences, xmin, ymin, xmax, ymax],
+                    ...
+                ]
+        shape (np.ndarray): [h, w]
+
+    Returns:
+                [
+                    [class_index, confidences, xmin, ymin, xmax, ymax],
+                    ...
+                ]
+    """
+    h = detections[:, 5] - detections[:, 3]
+    w = detections[:, 4] - detections[:, 2]
+    area = np.array(h * w)
+    print(len(detections))
+    #                                                     面积为原图到1/100
+    detections = detections[area > (shape[0] * shape[1] / 100)]
+    print(len(detections))
+    return detections
+
+
 if __name__ == "__main__":
-    y = load_yaml("../weights/yolov5.yaml")
-    print(y["size"])   # [640, 640]
-    print(y["stride"]) # 32
-    print(y["names"])  # {0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}
+    # y = load_yaml("../weights/yolov5.yaml")
+    # print(y["size"])   # [640, 640]
+    # print(y["stride"]) # 32
+    # print(y["names"])  # {0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}
+
+    detections = np.array([[10, 0.8, 200.04971, 196.26697, 489.98325, 424.07892],
+                           [10, 0.7, 141.04881, 311.3442 , 228.94856, 408.5379 ],
+                           [10, 0.6, 0.       , 303.4387 , 175.52124, 424.90558],
+                           [10, 0.5, 176.42613, 0.       , 460.68604, 227.06232],
+                           [10, 0.3, 384.6766 , 283.063  , 419.97977, 335.35898],
+                           [10, 0.8, 97.71875 , 346.97867, 103.96518, 353.037  ],
+                           [10, 0.7, 575.25476, 195.62448, 628.17926, 291.2721 ],
+                           [10, 0.6, 450.49182, 1.8310547, 640.     , 292.99066],
+                           [10, 0.7, 73.79396 , 368.1626 , 79.10231 , 372.40448],
+                           [10, 0.9, 84.013214, 332.34296, 89.18914 , 337.10605],
+                           [10, 0.8, 596.2429 , 248.21837, 601.9428 , 253.99461],
+                           [10, 0.1, 372.0439 , 363.4396 , 378.0838 , 368.31393]])
+    ignore_some(detections, [640, 640])
