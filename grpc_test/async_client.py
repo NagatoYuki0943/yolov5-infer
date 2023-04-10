@@ -50,7 +50,7 @@ async def run():
     detect_decode = base64.b64decode(response.detect)
     detect_res = pickle.loads(detect_decode)
     with open(os.path.join(CLIENT_SAVE_PATH, "detect.json"), mode="w", encoding="utf-8") as f:
-        json.dump(detect_res, f, indent=4)
+        json.dump(detect_res, f, indent=4, ensure_ascii=False) # ensure_ascii=False 保存为中文
     print(detect_res)
 
 

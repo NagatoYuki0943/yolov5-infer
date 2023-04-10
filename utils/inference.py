@@ -148,6 +148,9 @@ class Inference(ABC):
             # 返回原图
             return image
 
+        # 忽略一些框
+        # detections = ignore_some(detections, image.shape)
+
         # 获取不同颜色
         colors = mulit_colors(len(self.config["names"].keys()))
 
@@ -168,15 +171,21 @@ class Inference(ABC):
             image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 2)
             # 直接在原图上绘制文字背景，不透明
             # image = cv2.rectangle(image, (xmin, ymin - 20), (xmax, ymax)), colors[classId], cv2.FILLED)
+
+            # 文字
+            label = str(self.config["names"][classId]) + " " + "{:.2f}".format(confidence)
+            w, h = cv2.getTextSize(label, 0, fontScale=0.5, thickness=1)[0]  # text width, height
+
             # 添加文字背景
             temp_image = np.zeros(image.shape).astype(np.uint8)
-            temp_image = cv2.rectangle(temp_image, (xmin, ymin - 20), (xmax, ymin), colors[classId], cv2.FILLED)
+            temp_image = cv2.rectangle(temp_image, (xmin, ymin - 20 if ymin > 20 else ymin + h + 10), (xmax, ymin), colors[classId], cv2.FILLED)
             # 叠加原图和文字背景，文字背景是透明的
             image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
+
             # 添加文字
             image = cv2.putText(img         = image,
-                                text        = str(self.config["names"][classId]) + " " + "{:.2f}".format(confidence),
-                                org         = (xmin, ymin - 5),
+                                text        = label,
+                                org         = (xmin, ymin - 5 if ymin > 20 else ymin + h + 5),
                                 fontFace    = 0,
                                 fontScale   = 0.5,
                                 color       = (0, 0, 0),
@@ -210,6 +219,10 @@ class Inference(ABC):
         if len(detections) == 0:
             print("no detection")
             return {"detect": [], "num": {}, "image_size": shape}
+
+        # 忽略一些框
+        # detections = ignore_some(detections, shape)
+
         detect = {} # 结果返回一个dict
         count = []  # 类别计数
         res = []

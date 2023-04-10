@@ -54,11 +54,12 @@ def resize_and_pad(image, new_shape):
     new_size = tuple([int(x*ratio) for x in old_size])
     # 缩放高宽的长边为640
     image = cv2.resize(image, (new_size[1], new_size[0]))
-    # 查看高宽距离640的长度
+    # 填充bottom和right的长度
     delta_w = new_shape[1] - new_size[1]
     delta_h = new_shape[0] - new_size[0]
     # 使用灰色填充到640*640的形状
     color = [100, 100, 100]
+    #                                 src, top, bottom, left, right
     image_reized = cv2.copyMakeBorder(image, 0, delta_h, 0, delta_w, cv2.BORDER_CONSTANT, value=color)
 
     return image_reized, delta_w ,delta_h
@@ -92,7 +93,7 @@ def mulit_colors(num_classes: int):
     #   画框设置不同的颜色
     #---------------------------------------------------#
     #              hue saturation value
-    hsv_tuples = [(x / num_classes, 0.6, 1.) for x in range(num_classes)]
+    hsv_tuples = [(x / num_classes, 0.7, 1.) for x in range(num_classes)]
     # colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
     colors = [colorsys.hsv_to_rgb(*x) for x in hsv_tuples]
     # colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
@@ -125,8 +126,8 @@ def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:
     return array / np.sum(array, axis=axis)
 
 
-def ignore_some(detections: np.ndarray, shape: np.ndarray) -> np.ndarray:
-    """忽略一些框
+def ignore_some(detections: np.ndarray, shape: np.ndarray, ratio: int=100) -> np.ndarray:
+    """忽略一些框,目前根据相对图片的面积
 
     Args:
         detections (np.ndarray): np.float32
@@ -134,7 +135,8 @@ def ignore_some(detections: np.ndarray, shape: np.ndarray) -> np.ndarray:
                     [class_index, confidences, xmin, ymin, xmax, ymax],
                     ...
                 ]
-        shape (np.ndarray): [h, w]
+        shape (np.ndarray): [h, w, c]
+        ratio (int): 忽略总面积的比例
 
     Returns:
                 [
@@ -145,10 +147,8 @@ def ignore_some(detections: np.ndarray, shape: np.ndarray) -> np.ndarray:
     h = detections[:, 5] - detections[:, 3]
     w = detections[:, 4] - detections[:, 2]
     area = np.array(h * w)
-    print(len(detections))
     #                                                     面积为原图到1/100
-    detections = detections[area > (shape[0] * shape[1] / 100)]
-    print(len(detections))
+    detections = detections[area >= (shape[0] * shape[1] / ratio)]
     return detections
 
 
@@ -170,4 +170,5 @@ if __name__ == "__main__":
                            [10, 0.9, 84.013214, 332.34296, 89.18914 , 337.10605],
                            [10, 0.8, 596.2429 , 248.21837, 601.9428 , 253.99461],
                            [10, 0.1, 372.0439 , 363.4396 , 378.0838 , 368.31393]])
-    ignore_some(detections, [640, 640])
+    print(len(detections))
+    print(len(ignore_some(detections, [640, 640])))
