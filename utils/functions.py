@@ -126,8 +126,30 @@ def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:
     return array / np.sum(array, axis=axis)
 
 
-def ignore_some(detections: np.ndarray, shape: np.ndarray, ratio: int=100) -> np.ndarray:
-    """忽略一些框,目前根据相对图片的面积
+def find_inner_box_isin_outer_box(outer_box: list, inner_box: list) -> bool:
+    """determine whether a box is in another box
+
+    Args:
+        outer_box (list): 假设外部盒子 [x_min, y_min, x_max, y_max]
+        inner_box (list): 假设内部盒子 [x_min, y_min, x_max, y_max]
+
+    Returns:
+        bool: 外部盒子是否包含内部盒子
+    """
+    # 外面包裹内部
+    left   = outer_box[0] - inner_box[0] # < 0 说明outer_box更靠左
+    top    = outer_box[1] - inner_box[1] # < 0 说明outer_box更靠上
+    right  = outer_box[2] - inner_box[2] # > 0 说明outer_box更靠右
+    bottom = outer_box[3] - inner_box[3] # > 0 说明outer_box更靠下
+
+    if left < 0 and top < 0 and right > 0 and bottom > 0:
+        return True
+    else:
+        return False
+
+
+def ignore_overlap_boxes(detections: np.ndarray) -> np.ndarray:
+    """忽略一些框,根据同一个类别的框是否包含另一个框
 
     Args:
         detections (np.ndarray): np.float32
@@ -135,8 +157,6 @@ def ignore_some(detections: np.ndarray, shape: np.ndarray, ratio: int=100) -> np
                     [class_index, confidences, xmin, ymin, xmax, ymax],
                     ...
                 ]
-        shape (np.ndarray): [h, w, c]
-        ratio (int): 忽略总面积的比例
 
     Returns:
                 [
@@ -144,12 +164,54 @@ def ignore_some(detections: np.ndarray, shape: np.ndarray, ratio: int=100) -> np
                     ...
                 ]
     """
-    h = detections[:, 5] - detections[:, 3]
-    w = detections[:, 4] - detections[:, 2]
-    area = np.array(h * w)
-    #                                                     面积为原图到1/100
-    detections = detections[area >= (shape[0] * shape[1] / ratio)]
-    return detections
+    new_detections = []
+
+    # 获取每个类别
+    classes = np.unique(detections[:, 0])
+    # 遍历单一类别
+    for cls in classes:
+        dets_sig_cls = detections[detections[:, 0] == cls]
+        # 如果一个类别只有1个框,就直接保存
+        if len(dets_sig_cls) == 1:
+            new_detections.append(dets_sig_cls)
+            continue
+        # 求面积,根据面积排序,不是最好的办法
+        h = dets_sig_cls[:, 5] - dets_sig_cls[:, 3]
+        w = dets_sig_cls[:, 4] - dets_sig_cls[:, 2]
+        area = np.array(h * w)
+        index = area.argsort()  # 得到面积排序index
+        index = index[::-1]     # 转换为降序
+
+        # max代表大的框,min代表小的框
+        keeps = []
+        for i, max in enumerate(index[:-1]):
+            # 默认都不包含
+            keep = [False] * len(dets_sig_cls)
+            for min in index[i+1:]:
+                isin = find_inner_box_isin_outer_box(dets_sig_cls[max, 2:], dets_sig_cls[min, 2:])
+                keep[min] = isin # 包含
+            keeps.append(keep)
+        # 取反,原本False为不包含,True为包含,取反后False为不保留,True为保留
+        keeps = ~np.array(keeps)
+        # print(keeps) # 每一行代表每个框相对于其他框是否要保留
+        # [[True, True, True, True, False, True,  True,  True, True,  True,  True,  False],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
+        #  [True, True, True, True, True,  True,  False, True, True,  True,  False, True],
+        #  [True, True, True, True, True,  False, True,  True, False, False, True,  True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  False, True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
+        #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True]]
+
+        # 最终保留的index,True/False
+        # keeps.T: 转置之后每行代表是否要保留这个框
+        final_keep = np.all(keeps.T, axis=-1)
+        new_detections.append(dets_sig_cls[final_keep])
+    # new_detections：[np.ndarray, np.ndarray...]
+    return np.concatenate(new_detections, axis=0)
 
 
 if __name__ == "__main__":
@@ -170,5 +232,6 @@ if __name__ == "__main__":
                            [10, 0.9, 84.013214, 332.34296, 89.18914 , 337.10605],
                            [10, 0.8, 596.2429 , 248.21837, 601.9428 , 253.99461],
                            [10, 0.1, 372.0439 , 363.4396 , 378.0838 , 368.31393]])
-    print(len(detections))
-    print(len(ignore_some(detections, [640, 640])))
+    print(len(detections))      # 12
+    new_detections = ignore_overlap_boxes(detections)
+    print(len(new_detections))  # 5

@@ -43,10 +43,10 @@ class Inference(ABC):
 
 
     def nms(self, detections: np.ndarray) -> np.ndarray:
-        """后处理
+        """非极大值抑制,所有类别一起做的,没有分开做
 
         Args:
-            detections (np.ndarray):                检测到的数据 [25200, 85]
+            detections (np.ndarray): 检测到的数据 [25200, 85]
 
         Returns:
             (np.ndarray): np.float32
@@ -127,7 +127,7 @@ class Inference(ABC):
         return detections
 
 
-    def figure_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, image: np.ndarray) -> np.ndarray:
+    def figure_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, image: np.ndarray, ignore_overlap_box: bool = False) -> np.ndarray:
         """将框画到原图
 
         Args:
@@ -139,6 +139,7 @@ class Inference(ABC):
             delta_w (int):      填充的宽
             delta_h (int):      填充的高
             image (np.ndarray): 原图
+            ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
         Returns:
             np.ndarray: 绘制的图
@@ -148,8 +149,9 @@ class Inference(ABC):
             # 返回原图
             return image
 
-        # 忽略一些框
-        # detections = ignore_some(detections, image.shape)
+        # 忽略重叠的小框,不同于nms
+        if ignore_overlap_box:
+            detections = ignore_overlap_boxes(detections)
 
         # 获取不同颜色
         colors = mulit_colors(len(self.config["names"].keys()))
@@ -196,7 +198,7 @@ class Inference(ABC):
         return image
 
 
-    def get_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, shape: np.ndarray) -> dict:
+    def get_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, shape: np.ndarray, ignore_overlap_box: bool = False) -> dict:
         """返回还原到原图的框
 
         Args:
@@ -208,6 +210,7 @@ class Inference(ABC):
             delta_w (int):      填充的宽
             delta_h (int):      填充的高
             shape (np.ndarray): (h, w, c)
+            ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
         Returns:
             detect (dict):  {
@@ -220,8 +223,9 @@ class Inference(ABC):
             print("no detection")
             return {"detect": [], "num": {}, "image_size": shape}
 
-        # 忽略一些框
-        # detections = ignore_some(detections, shape)
+        # 忽略重叠的小框,不同于nms
+        if ignore_overlap_box:
+            detections = ignore_overlap_boxes(detections)
 
         detect = {} # 结果返回一个dict
         count = []  # 类别计数
