@@ -4,5 +4,8 @@ opencv-python
 # onnxruntime   # CPU
 onnxruntime-gpu # GPU
 
+# openvino
+# https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/download.html
+
 # tensorrt
 # 安装方式在trt的README.md中

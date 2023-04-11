@@ -114,10 +114,10 @@ class OVInference(Inference):
 
         # 1.1 使用推理请求
         # infer_request = self.model.create_infer_request()
-        # results       = infer_request.infer({self.inputs[0]: x})          # 直接返回推理结果
-        # results       = infer_request.infer({0: x})                       # 直接返回推理结果
-        # results       = infer_request.infer([x])                          # 直接返回推理结果
-        # result0       = infer_request.get_output_tensor(outputs[0].index) # 通过方法获取单独结果  outputs[0].index 可以用0 1代替
+        # results       = infer_request.infer({self.inputs[0]: x})               # 直接返回推理结果
+        # results       = infer_request.infer({0: x})                            # 直接返回推理结果
+        # results       = infer_request.infer([x])                               # 直接返回推理结果
+        # result0       = infer_request.get_output_tensor(self.outputs[0].index) # 通过方法获取单独结果  outputs[0].index 可以用0 1代替
 
         # 1.2 模型直接推理
         # results = self.model({self.inputs[0]: x})

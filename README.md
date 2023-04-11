@@ -107,8 +107,6 @@ names:
   79: toothbrush
 ```
 
-
-
 # Onnxruntime推理例子
 
 ```python

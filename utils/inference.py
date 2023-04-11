@@ -55,66 +55,41 @@ class Inference(ABC):
                     ...
                 ]
         """
-        # boxes = []  # [[xmin, ymin, w, h]]
-        # class_ids = []
-        # confidences = []
-        # 循环25200次,很慢,大约12ms
-        # for prediction in detections:
-        #     confidence = prediction[4].item()           # 是否有物体得分
-        #     if confidence >= self.confidence_threshold: # 是否有物体预支
-        #         classes_scores = prediction[5:]         # 取出所有类别id
-        #         class_id = np.argmax(classes_scores)    # 找到概率最大的id
-        #         if (classes_scores[class_id] > .25):    # 最大概率必须大于 0.25
-        #             confidences.append(confidence)      # 保存置信度(注意保存的是confidence，不是classes_scores[class_id]),类别id,box
-        #             class_ids.append(class_id)
-        #             # center_x, center_y, w, h
-        #             x, y, w, h = prediction[0].item(), prediction[1].item(), prediction[2].item(), prediction[3].item()
-        #             xmin = x - (w / 2)
-        #             ymin = y - (h / 2)
-        #             box = [xmin, ymin, w, h]
-        #             boxes.append(box)
-
         # 加速优化写法
         # 通过置信度过滤一部分框
-        detections = detections[detections[:, 4] > self.confidence_threshold]
+        detections     = detections[detections[:, 4] > self.confidence_threshold]
         # 位置坐标
-        loc = detections[:, :4]
+        loc            = detections[:, :4]
         # 置信度
-        confidences = detections[:, 4]
+        confidences    = detections[:, 4]
         # 分类
-        cls = detections[:, 5:]
+        cls            = detections[:, 5:]
         # 最大分类index
-        max_cls_index = cls.argmax(axis=-1)
+        max_cls_index  = cls.argmax(axis=-1)
         # 最大分类score
-        max_cls_score = cls.max(axis=-1)
-        # 置信度
-        confidences = confidences[max_cls_score > .25]
-        # 类别index
-        class_index = max_cls_index[max_cls_score > .25]
+        max_cls_score  = cls.max(axis=-1)
+
         # 位置
-        boxes = loc[max_cls_score > .25]
+        boxes          = loc[max_cls_score > .25]
+        # 置信度
+        confidences    = confidences[max_cls_score > .25]
+        # 类别index
+        class_index    = max_cls_index[max_cls_score > .25]
+
         # [center_x, center_y, w, h] -> [x_min, y_min, w, h]
         boxes[:, 0:2] -= boxes[:, 2:4] / 2
 
         # nms
-        indexes = cv2.dnn.NMSBoxes(boxes, confidences, self.score_threshold, self.nms_threshold)
+        nms_indexes = cv2.dnn.NMSBoxes(boxes, confidences, self.score_threshold, self.nms_threshold)
 
-        # 根据nms返回的id获取对应的类别,置信度,box
-        # detections = []
-        # for i in indexes:
-        #     j = i.item()
-        #     boxes[j][2] += boxes[j][0] # w -> xmax
-        #     boxes[j][3] += boxes[j][1] # h -> ymax
-        #     detections.append({"class_index": class_index[j], "confidence": confidences[j], "box": boxes[j]})
-
-        boxes = boxes[indexes]
-
+        # nms过滤
+        boxes = boxes[nms_indexes]
         # [x_min, y_min, w, h] -> [x_min, y_min, x_max, y_max]
         boxes[:, 2:4] += boxes[:, 0:2]
 
         # 防止框超出图片边界, 前面判断为True/False,后面选择更改的列,不选择更改的列会将整行都改为0
-        boxes[boxes[:, 0] < 0.0, 0] = 0
-        boxes[boxes[:, 1] < 0.0, 1] = 0
+        boxes[boxes[:, 0] < 0.0, 0] = 0.0
+        boxes[boxes[:, 1] < 0.0, 1] = 0.0
         boxes[boxes[:, 2] > self.config["size"][1], 2] = self.config["size"][1]
         boxes[boxes[:, 3] > self.config["size"][0], 3] = self.config["size"][0]
 
@@ -122,8 +97,7 @@ class Inference(ABC):
         #   [class_index, confidences, xmin, ymin, xmax, ymax],
         #   ...
         # ]
-        detections = np.concatenate((np.expand_dims(class_index[indexes], 1), np.expand_dims(confidences[indexes], 1), boxes), axis=-1)
-
+        detections = np.concatenate((np.expand_dims(class_index[nms_indexes], 1), np.expand_dims(confidences[nms_indexes], 1), boxes), axis=-1)
         return detections
 
 
