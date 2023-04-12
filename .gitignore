@@ -8,8 +8,8 @@ __pycache__
 weights/*openvino*/
 
 # server files
-*/client/*
-*/server/*
+**/client/*
+**/server/*
 
 # log
-*/logs/*
+**/logs/*
