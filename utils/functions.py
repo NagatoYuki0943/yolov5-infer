@@ -127,8 +127,8 @@ def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:
     return array / np.sum(array, axis=axis)
 
 
-def find_inner_box_isin_outer_box(box1: list, box2: list, ratio: float = 0.75) -> bool:
-    """determine whether a box is in another box
+def ignore_box2_or_not(box1: list, box2: list, ratio: float = 0.75) -> bool:
+    """determine whether ignore box2 use iou
 
     Args:
         box1 (list): 假设外部盒子 [x_min, y_min, x_max, y_max]
@@ -194,7 +194,7 @@ def ignore_overlap_boxes(detections: np.ndarray) -> np.ndarray:
             # 默认都不包含
             keep = [False] * len(dets_sig_cls)
             for min in index[i+1:]:
-                isin = find_inner_box_isin_outer_box(dets_sig_cls[max, 2:], dets_sig_cls[min, 2:])
+                isin = ignore_box2_or_not(dets_sig_cls[max, 2:], dets_sig_cls[min, 2:])
                 keep[min] = isin # 包含
             keeps.append(keep)
         # 取反,原本False为不包含,True为包含,取反后False为不保留,True为保留
