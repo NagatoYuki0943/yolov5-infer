@@ -3,13 +3,13 @@ __pycache__
 .idea
 
 # model weights
-*.onnx
-*.engine
-weights/*openvino*/
+weights
+!weights/README.md
+!weights/yolov5.yaml
 
 # server files
-**/client/*
-**/server/*
+client
+server
 
 # log
-**/logs/*
+logs

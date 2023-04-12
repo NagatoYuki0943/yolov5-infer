@@ -134,7 +134,7 @@ class Inference(ABC):
             np.ndarray: 绘制的图
         """
         if len(detections) == 0:
-            print("no detection")
+            self.logger.warning("no detection")
             # 返回原图
             return image
 
