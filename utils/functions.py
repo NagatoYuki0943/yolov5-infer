@@ -8,6 +8,7 @@ import time
 import numpy as np
 import colorsys
 from pathlib import Path
+import logging
 
 
 def load_yaml(yaml_path: str) -> dict:
@@ -101,7 +102,7 @@ def mulit_colors(num_classes: int):
     return colors
 
 
-def check_onnx(onnx_path):
+def check_onnx(onnx_path, logger: logging.Logger):
     """检查onnx模型是否损坏
 
     Args:
@@ -114,9 +115,9 @@ def check_onnx(onnx_path):
     try:
         onnx.checker.check_model(model_)
     except Exception:
-        print("Model incorrect")
+        logger.error("Model incorrect")
     else:
-        print("Model correct")
+        logger.info("Model correct")
 
 
 def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:

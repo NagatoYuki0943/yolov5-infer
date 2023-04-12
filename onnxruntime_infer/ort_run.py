@@ -10,14 +10,6 @@ import cv2
 from utils import Inference, check_onnx, get_image
 
 
-# print(ort.__version__)
-print("onnxruntime all providers:", ort.get_all_providers())
-print("onnxruntime available providers:", ort.get_available_providers())
-# ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
-print("ort devices:", ort.get_device())
-# GPU
-
-
 class OrtInference(Inference):
     def __init__(self, model_path: str, mode: str="cpu", **kwargs) -> None:
         """
@@ -27,8 +19,14 @@ class OrtInference(Inference):
             mode (str, optional): cpu cuda tensorrt. Defaults to cpu.
         """
         super().__init__(**kwargs)
+        # 0.show some info
+        self.logger.info(f"onnxruntime version: {ort.__version__}")
+        # self.logger.info(f"onnxruntime all providers: {ort.get_all_providers()}")
+        self.logger.info(f"onnxruntime available providers: {ort.get_available_providers()}") # ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+        # self.logger.info(f"ort devices: {ort.get_device()}")                                  # GPU
+
         # 1.检测onnx模型
-        check_onnx(model_path)
+        check_onnx(model_path, self.logger)
         # 2.载入模型
         self.model = self.get_model(model_path, mode)
         # 3.获取模型收入输出
@@ -47,7 +45,7 @@ class OrtInference(Inference):
         """
         mode = mode.lower()
         assert mode in ["cpu", "cuda", "tensorrt"], "onnxruntime only support cpu, cuda and tensorrt inference."
-        print(f"inference with {mode} !")
+        self.logger.info(f"inference with {mode} !")
 
         so = ort.SessionOptions()
         so.log_severity_level = 3
@@ -92,17 +90,17 @@ class OrtInference(Inference):
         #   查看model中的内容
         #   get_inputs()返回对象，[0]返回名字
         #--------------------------------#
-        # print("model outputs: \n", model.get_inputs())    # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140A770>]
-        # print(model.get_inputs()[0])                      # NodeArg(name='images', type='tensor(float)', shape=[1, 3, 640, 640])
-        # print(model.get_inputs()[0].name)                 # images
-        # print(model.get_inputs()[0].type)                 # tensor(float)
-        # print(model.get_inputs()[0].shape, "\n")          # [1, 3, 640, 640]
+        # self.logger.info("model outputs: \n", model.get_inputs())    # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140A770>]
+        # self.logger.info(model.get_inputs()[0])                      # NodeArg(name='images', type='tensor(float)', shape=[1, 3, 640, 640])
+        # self.logger.info(model.get_inputs()[0].name)                 # images
+        # self.logger.info(model.get_inputs()[0].type)                 # tensor(float)
+        # self.logger.info(model.get_inputs()[0].shape, "\n")          # [1, 3, 640, 640]
 
-        # print("model outputs: \n", model.get_outputs())   # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140B5B0>]
-        # print(model.get_outputs()[0])                     # NodeArg(name='output', type='tensor(float)', shape=[1, 25200, 85])
-        # print(model.get_outputs()[0].name)                # output0
-        # print(model.get_outputs()[0].type)                # tensor(float)
-        # print(model.get_outputs()[0].shape, "\n")         # [1, 25200, 85]
+        # self.logger.info("model outputs: \n", model.get_outputs())   # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140B5B0>]
+        # self.logger.info(model.get_outputs()[0])                     # NodeArg(name='output', type='tensor(float)', shape=[1, 25200, 85])
+        # self.logger.info(model.get_outputs()[0].name)                # output0
+        # self.logger.info(model.get_outputs()[0].type)                # tensor(float)
+        # self.logger.info(model.get_outputs()[0].shape, "\n")         # [1, 25200, 85]
 
         return model
 
@@ -112,7 +110,7 @@ class OrtInference(Inference):
         # [B, C, H, W]
         x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
         self.infer(x)
-        print("warmup finish")
+        self.logger.info("warmup finish")
 
     def infer(self, image: np.ndarray) -> list[np.ndarray]:
         """推理单张图片

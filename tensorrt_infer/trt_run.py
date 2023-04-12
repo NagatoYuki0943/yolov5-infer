@@ -33,9 +33,9 @@ class TensorRTInfer(Inference):
         self.openvino_preprocess = False    # TODO: 更好的方式将openvino_preprocess在不使用openvino时设置为False
 
         # Load TRT engine
-        self.logger = trt.Logger(trt.Logger.ERROR)
-        trt.init_libnvinfer_plugins(self.logger, namespace="")
-        with open(model_path, "rb") as f, trt.Runtime(self.logger) as runtime:
+        self.trtlogger = trt.Logger(trt.Logger.ERROR)
+        trt.init_libnvinfer_plugins(self.trtlogger, namespace="")
+        with open(model_path, "rb") as f, trt.Runtime(self.trtlogger) as runtime:
             assert runtime
             self.engine = runtime.deserialize_cuda_engine(f.read())
         assert self.engine
@@ -88,7 +88,8 @@ class TensorRTInfer(Inference):
                 self.inputs.append(binding)
             else:
                 self.outputs.append(binding)
-            print("{} '{}' with shape {} and dtype {}".format(
+
+            self.logger.info("{} '{}' with shape {} and dtype {}".format(
                 "Input" if is_input else "Output",
                 binding['name'], binding['shape'], binding['dtype']))
             # Input 'images' with shape [1, 3, 640, 640] and dtype float32
@@ -142,7 +143,7 @@ class TensorRTInfer(Inference):
         # [B, C, H, W]
         x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
         self.infer(x)
-        print("warmup finish")
+        self.logger.info("warmup finish")
 
 
 if __name__ == "__main__":

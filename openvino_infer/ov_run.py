@@ -44,8 +44,8 @@ class OVInference(Inference):
         # 2.保存模型输入输出
         self.inputs  = self.model.inputs
         self.outputs = self.model.outputs
-        # print(f"inputs: {self.inputs}")   # inputs: [<ConstOutput: names[images] shape[1,3,640,640] type: f32>]
-        # print(f"outputs: {self.outputs}") # outputs: [<ConstOutput: names[output0] shape[1,25200,85] type: f32>
+        self.logger.info(f"inputs: {self.inputs}")   # inputs: [<ConstOutput: names[images] shape[1,3,640,640] type: f32>]
+        self.logger.info(f"outputs: {self.outputs}") # outputs: [<ConstOutput: names[output0] shape[1,25200,85] type: f32>
 
         # 3.预热模型
         self.warm_up()
@@ -99,7 +99,7 @@ class OVInference(Inference):
         # [B, C, H, W]
         x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
         self.infer(x)
-        print("warmup finish")
+        self.logger.info("warmup finish")
 
     def infer(self, image: np.ndarray) -> list[np.ndarray]:
         """推理单张图片

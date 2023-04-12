@@ -39,7 +39,6 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
         # print("array shape:", array.shape)
         # 再解码成图片 三维图片
         image_bgr = cv2.imdecode(array, cv2.IMREAD_COLOR)
-        print("image shape:", image_bgr.shape)
 
         #=====================预测图片=====================#
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
@@ -85,7 +84,7 @@ def get_inference():
 
     # 实例化推理器
     inference = OrtInference(**config)
-    print("load inference!")
+    inference.logger.info("load inference!")
     return inference
 
 

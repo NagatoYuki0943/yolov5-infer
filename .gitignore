@@ -2,8 +2,14 @@ __pycache__
 .vscode
 .idea
 
+# model weights
 *.onnx
 *.engine
 weights/*openvino*/
+
+# server files
 */client/*
 */server/*
+
+# log
+*/logs/*

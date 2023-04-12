@@ -1,0 +1,32 @@
+2023-04-12 14:56:23,028 - ort_run.py[line:23] - INFO: onnxruntime version: 1.14.1
+2023-04-12 14:56:23,028 - ort_run.py[line:25] - INFO: onnxruntime available providers: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+2023-04-12 14:56:23,088 - functions.py[line:120] - INFO: Model correct
+2023-04-12 14:56:23,090 - ort_run.py[line:48] - INFO: inference with cpu !
+2023-04-12 14:56:23,260 - ort_run.py[line:113] - INFO: warmup finish
+2023-04-12 14:56:23,355 - inference.py[line:159] - INFO: Bbox 0 Class: 0, Confidence: 0.88, coords: [ xmin: 669, ymin: 390, xmax: 810, ymax: 879 ]
+2023-04-12 14:56:23,364 - inference.py[line:159] - INFO: Bbox 1 Class: 0, Confidence: 0.88, coords: [ xmin: 220, ymin: 408, xmax: 346, ymax: 867 ]
+2023-04-12 14:56:23,371 - inference.py[line:159] - INFO: Bbox 2 Class: 5, Confidence: 0.86, coords: [ xmin: 16, ymin: 221, xmax: 801, ymax: 792 ]
+2023-04-12 14:56:23,378 - inference.py[line:159] - INFO: Bbox 3 Class: 0, Confidence: 0.85, coords: [ xmin: 49, ymin: 389, xmax: 248, ymax: 912 ]
+2023-04-12 14:56:23,385 - inference.py[line:159] - INFO: Bbox 4 Class: 0, Confidence: 0.61, coords: [ xmin: 0, ymin: 552, xmax: 67, ymax: 875 ]
+2023-04-12 14:56:23,392 - inference.py[line:265] - INFO: transform time: 2 ms, infer time: 71 ms, nms time: 0 ms, figure time: 36 ms
+2023-04-12 14:56:25,856 - inference.py[line:302] - INFO: transform time: 1 ms, infer time: 76 ms, nms time: 0 ms, get boxes time: 0 ms
+2023-04-12 14:56:29,037 - ov_run.py[line:47] - INFO: inputs: [<ConstOutput: names[images] shape[1,3,640,640] type: f32>]
+2023-04-12 14:56:29,037 - ov_run.py[line:48] - INFO: outputs: [<ConstOutput: names[output0] shape[1,25200,85] type: f32>]
+2023-04-12 14:56:29,085 - ov_run.py[line:102] - INFO: warmup finish
+2023-04-12 14:56:29,152 - inference.py[line:159] - INFO: Bbox 0 Class: 0, Confidence: 0.88, coords: [ xmin: 669, ymin: 390, xmax: 810, ymax: 879 ]
+2023-04-12 14:56:29,158 - inference.py[line:159] - INFO: Bbox 1 Class: 0, Confidence: 0.88, coords: [ xmin: 220, ymin: 408, xmax: 346, ymax: 867 ]
+2023-04-12 14:56:29,164 - inference.py[line:159] - INFO: Bbox 2 Class: 5, Confidence: 0.86, coords: [ xmin: 16, ymin: 221, xmax: 801, ymax: 792 ]
+2023-04-12 14:56:29,171 - inference.py[line:159] - INFO: Bbox 3 Class: 0, Confidence: 0.85, coords: [ xmin: 49, ymin: 389, xmax: 248, ymax: 912 ]
+2023-04-12 14:56:29,177 - inference.py[line:159] - INFO: Bbox 4 Class: 0, Confidence: 0.61, coords: [ xmin: 0, ymin: 552, xmax: 67, ymax: 875 ]
+2023-04-12 14:56:29,184 - inference.py[line:265] - INFO: transform time: 1 ms, infer time: 46 ms, nms time: 0 ms, figure time: 32 ms
+2023-04-12 14:56:30,565 - inference.py[line:302] - INFO: transform time: 1 ms, infer time: 49 ms, nms time: 0 ms, get boxes time: 0 ms
+2023-04-12 14:56:35,371 - trt_run.py[line:92] - INFO: Input 'images' with shape [1, 3, 640, 640] and dtype float32
+2023-04-12 14:56:35,371 - trt_run.py[line:92] - INFO: Output 'output0' with shape [1, 25200, 85] and dtype float32
+2023-04-12 14:56:35,442 - trt_run.py[line:146] - INFO: warmup finish
+2023-04-12 14:56:35,530 - inference.py[line:159] - INFO: Bbox 0 Class: 0, Confidence: 0.88, coords: [ xmin: 669, ymin: 390, xmax: 810, ymax: 879 ]
+2023-04-12 14:56:35,541 - inference.py[line:159] - INFO: Bbox 1 Class: 0, Confidence: 0.88, coords: [ xmin: 220, ymin: 408, xmax: 346, ymax: 867 ]
+2023-04-12 14:56:35,553 - inference.py[line:159] - INFO: Bbox 2 Class: 5, Confidence: 0.86, coords: [ xmin: 16, ymin: 221, xmax: 801, ymax: 792 ]
+2023-04-12 14:56:35,561 - inference.py[line:159] - INFO: Bbox 3 Class: 0, Confidence: 0.85, coords: [ xmin: 49, ymin: 389, xmax: 248, ymax: 912 ]
+2023-04-12 14:56:35,566 - inference.py[line:159] - INFO: Bbox 4 Class: 0, Confidence: 0.61, coords: [ xmin: 0, ymin: 552, xmax: 67, ymax: 875 ]
+2023-04-12 14:56:35,574 - inference.py[line:265] - INFO: transform time: 0 ms, infer time: 66 ms, nms time: 0 ms, figure time: 44 ms
+2023-04-12 14:56:39,793 - inference.py[line:302] - INFO: transform time: 1 ms, infer time: 84 ms, nms time: 0 ms, get boxes time: 0 ms

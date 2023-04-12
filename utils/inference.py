@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import os
 from collections import Counter
+import logging, coloredlogs
 from .functions import *
 
 
@@ -27,6 +28,20 @@ class Inference(ABC):
         self.score_threshold      = score_threshold
         self.nms_threshold        = nms_threshold
         self.openvino_preprocess  = openvino_preprocess
+
+        # logger
+        self.logger: logging.Logger = logging.getLogger(name="Inference")
+
+        # 保存log
+        if not os.path.exists("./logs"):
+            os.makedirs("./logs")
+        logging.basicConfig(format="%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s",
+                            filename="./logs/log.txt",
+                            level=logging.DEBUG,
+                            filemode="a")
+        coloredlogs.install(level="DEBUG")
+        # level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+        coloredlogs.install(level="DEBUG", logger=self.logger)
 
 
     @abstractmethod
@@ -141,7 +156,7 @@ class Inference(ABC):
             ymin = int(box[1] / ((self.config["size"][0] - delta_h) / image.shape[0]))
             xmax = int(box[2] / ((self.config["size"][1] - delta_w) / image.shape[1]))
             ymax = int(box[3] / ((self.config["size"][0] - delta_h) / image.shape[0]))
-            print( f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]" )
+            self.logger.info(f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]")
 
             # 绘制框
             image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 2)
@@ -194,7 +209,7 @@ class Inference(ABC):
                             }
         """
         if len(detections) == 0:
-            print("no detection")
+            self.logger.warning("no detection")
             return {"detect": [], "num": {}, "image_size": shape}
 
         # 忽略重叠的小框,不同于nms
@@ -247,7 +262,7 @@ class Inference(ABC):
         t4 = time.time()
         image = self.figure_boxes(detections, delta_w, delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
         t5 = time.time()
-        print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
+        self.logger.info(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
 
         # 4. 返回图片
         return image
@@ -284,7 +299,7 @@ class Inference(ABC):
         detect = self.get_boxes(detections, delta_w, delta_h, image_rgb.shape) # shape: (h, w, c)
         t5 = time.time()
 
-        print(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, get boxes time: {int((t5-t4) * 1000)} ms")
+        self.logger.info(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, get boxes time: {int((t5-t4) * 1000)} ms")
 
         # 4. 返回detect
         return detect
@@ -343,9 +358,9 @@ class Inference(ABC):
             infer_times  += infer_time
             nms_times    += nms_time
             figure_times += figure_times
-            print(f"transform time: {trans_time} ms, infer time: {infer_time} ms, nms time: {nms_time} ms, figure time: {figure_time} ms")
+            self.logger.info(f"transform time: {trans_time} ms, infer time: {infer_time} ms, nms time: {nms_time} ms, figure time: {figure_time} ms")
 
             # 7.保存图片
             cv2.imwrite(os.path.join(save_dir, image_file), image)
 
-        print(f"avg transform time: {trans_times / len(image_paths)} ms, avg infer time: {infer_times / len(image_paths)} ms, avg nms time: {nms_times / len(image_paths)} ms, avg figure time: {figure_times / len(image_paths)} ms")
+        self.logger.info(f"avg transform time: {trans_times / len(image_paths)} ms, avg infer time: {infer_times / len(image_paths)} ms, avg nms time: {nms_times / len(image_paths)} ms, avg figure time: {figure_times / len(image_paths)} ms")
