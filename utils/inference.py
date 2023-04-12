@@ -9,10 +9,10 @@ from .functions import *
 class Inference(ABC):
     def __init__(self,
                  yaml_path: str,
-                 confidence_threshold: float=0.25,
-                 score_threshold: float=0.2,
-                 nms_threshold: float=0.45,
-                 openvino_preprocess=False,
+                 confidence_threshold: float = 0.25,
+                 score_threshold:      float = 0.2,
+                 nms_threshold:        float = 0.45,
+                 openvino_preprocess         = False,
                  ) -> None:
         """父类推理器
 

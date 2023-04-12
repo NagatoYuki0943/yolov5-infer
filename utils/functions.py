@@ -66,7 +66,7 @@ def resize_and_pad(image, new_shape):
     return image_reized, delta_w ,delta_h
 
 
-def transform(image: np.ndarray, openvino_preprocess=False) -> np.ndarray:
+def transform(image: np.ndarray, openvino_preprocess = False) -> np.ndarray:
     """图片预处理
 
     Args:
@@ -127,23 +127,24 @@ def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:
     return array / np.sum(array, axis=axis)
 
 
-def find_inner_box_isin_outer_box(outer_box: list, inner_box: list) -> bool:
+def find_inner_box_isin_outer_box(outer_box: list, inner_box: list, scale: int = 5) -> bool:
     """determine whether a box is in another box
 
     Args:
         outer_box (list): 假设外部盒子 [x_min, y_min, x_max, y_max]
         inner_box (list): 假设内部盒子 [x_min, y_min, x_max, y_max]
+        scale (int):      调整盒子的大小,相当于忽略宽高输出scale的大小. Defaults to 5.
 
     Returns:
         bool: 外部盒子是否包含内部盒子
     """
     # 外面包裹内部
-    left   = outer_box[0] - inner_box[0] # < 0 说明outer_box更靠左
-    top    = outer_box[1] - inner_box[1] # < 0 说明outer_box更靠上
-    right  = outer_box[2] - inner_box[2] # > 0 说明outer_box更靠右
-    bottom = outer_box[3] - inner_box[3] # > 0 说明outer_box更靠下
+    left   = int(outer_box[0] / scale) - int(inner_box[0] / scale) # < 0 说明outer_box更靠左
+    top    = int(outer_box[1] / scale) - int(inner_box[1] / scale) # < 0 说明outer_box更靠上
+    right  = int(outer_box[2] / scale) - int(inner_box[2] / scale) # > 0 说明outer_box更靠右
+    bottom = int(outer_box[3] / scale) - int(inner_box[3] / scale) # > 0 说明outer_box更靠下
 
-    if left < 0 and top < 0 and right > 0 and bottom > 0:
+    if left <= 0 and top <= 0 and right >= 0 and bottom >= 0:
         return True
     else:
         return False
@@ -194,7 +195,7 @@ def ignore_overlap_boxes(detections: np.ndarray) -> np.ndarray:
             keeps.append(keep)
         # 取反,原本False为不包含,True为包含,取反后False为不保留,True为保留
         keeps = ~np.array(keeps)
-        # print(keeps) # 每一行代表每个框相对于其他框是否要保留
+        # print(keeps) # 每一行代表被判断的框相对于判断框是否要保留
         # [[True, True, True, True, False, True,  True,  True, True,  True,  True,  False],
         #  [True, True, True, True, True,  True,  True,  True, True,  True,  True,  True],
         #  [True, True, True, True, True,  True,  False, True, True,  True,  False, True],
@@ -211,6 +212,7 @@ def ignore_overlap_boxes(detections: np.ndarray) -> np.ndarray:
         # keeps.T: 转置之后每行代表是否要保留这个框
         final_keep = np.all(keeps.T, axis=-1)
         new_detections.append(dets_sig_cls[final_keep])
+
     # new_detections：[np.ndarray, np.ndarray...]
     return np.concatenate(new_detections, axis=0)
 
