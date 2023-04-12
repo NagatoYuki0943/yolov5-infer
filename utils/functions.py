@@ -127,24 +127,28 @@ def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:
     return array / np.sum(array, axis=axis)
 
 
-def find_inner_box_isin_outer_box(outer_box: list, inner_box: list, scale: int = 5) -> bool:
+def find_inner_box_isin_outer_box(box1: list, box2: list, ratio: float = 0.75) -> bool:
     """determine whether a box is in another box
 
     Args:
-        outer_box (list): 假设外部盒子 [x_min, y_min, x_max, y_max]
-        inner_box (list): 假设内部盒子 [x_min, y_min, x_max, y_max]
-        scale (int):      调整盒子的大小,相当于忽略宽高输出scale的大小. Defaults to 5.
+        box1 (list): 假设外部盒子 [x_min, y_min, x_max, y_max]
+        box2 (list): 假设内部盒子 [x_min, y_min, x_max, y_max]
+        ratio (float): inner_box相当于box2的面积的阈值,大于阈值就忽略. Defaults to 0.75.
 
     Returns:
         bool: 外部盒子是否包含内部盒子
     """
-    # 外面包裹内部
-    left   = int(outer_box[0] / scale) - int(inner_box[0] / scale) # < 0 说明outer_box更靠左
-    top    = int(outer_box[1] / scale) - int(inner_box[1] / scale) # < 0 说明outer_box更靠上
-    right  = int(outer_box[2] / scale) - int(inner_box[2] / scale) # > 0 说明outer_box更靠右
-    bottom = int(outer_box[3] / scale) - int(inner_box[3] / scale) # > 0 说明outer_box更靠下
+    # 内部盒子面积
+    inner_box_x1 = max(box1[0], box2[0])
+    inner_box_y1 = max(box1[1], box2[1])
+    inner_box_x2 = min(box1[2], box2[2])
+    inner_box_y2 = min(box1[3], box2[3])
+    # max 用来判断是否重叠
+    inner_box_area = max(inner_box_x2 - inner_box_x1, 0) * max(inner_box_y2 - inner_box_y1, 0)
 
-    if left <= 0 and top <= 0 and right >= 0 and bottom >= 0:
+    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
+
+    if inner_box_area / box2_area > ratio:
         return True
     else:
         return False
