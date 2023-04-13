@@ -18,7 +18,7 @@ from utils.functions import json2xml
 SERVER_HOST = "localhost:50054"
 SERVER_SAVE_PATH = "server"
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
-SAVE = False # 是否保存图片和xml
+SAVE = True # 是否保存图片和xml
 
 
 class Server(object_detect_pb2_grpc.YoloDetectServicer):
@@ -42,8 +42,7 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
 
         #=====================预测图片=====================#
         image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        image_bgr_detect = self.inference.single(image_rgb)         # 推理返回绘制的图片
-        detect: dict = self.inference.single_get_boxes(image_rgb)   # 推理返回框的数据,一般只需要一个推理即可
+        detect, image_bgr_detect = self.inference.single(image_rgb) # 推理返回结果和绘制的图片
 
         #================保存图片和检测结果=================#
         if SAVE:

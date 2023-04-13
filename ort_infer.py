@@ -20,12 +20,12 @@ IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-image_bgr_detect = inference.single(image_rgb)
+result, image_bgr_detect = inference.single(image_rgb)
+print(result)
 cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
-print(inference.single_get_boxes(image_rgb))
 
 # 多张图片推理
 IMAGE_DIR = r"../datasets/coco128/images/train2017"
 SAVE_DIR  = r"../datasets/coco128/images/train2017_res"
-# inference.multi(IMAGE_DIR, SAVE_DIR)
+# inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True)

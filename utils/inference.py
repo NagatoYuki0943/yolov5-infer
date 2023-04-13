@@ -116,8 +116,8 @@ class Inference(ABC):
         return detections
 
 
-    def figure_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, image: np.ndarray, ignore_overlap_box: bool = False) -> np.ndarray:
-        """将框画到原图
+    def box_to_origin(self, detections: np.ndarray, delta_w: int, delta_h: int, shape: np.ndarray) -> np.ndarray:
+        """将将检测结果的坐标还原到原图尺寸
 
         Args:
             detections (np.ndarray): np.float32
@@ -127,6 +127,28 @@ class Inference(ABC):
                     ]
             delta_w (int):      填充的宽
             delta_h (int):      填充的高
+            shape (np.ndarray): (h, w, c)
+
+        Returns:
+            np.ndarray: same as detections
+        """
+        # 还原到原图尺寸并转化为int                                                    shape: (h, w, c)
+        detections[:, 2] = detections[:, 2] / ((self.config["imgsz"][1] - delta_w) / shape[1])    # xmin
+        detections[:, 3] = detections[:, 3] / ((self.config["imgsz"][0] - delta_h) / shape[0])    # ymin
+        detections[:, 4] = detections[:, 4] / ((self.config["imgsz"][1] - delta_w) / shape[1])    # xmax
+        detections[:, 5] = detections[:, 5] / ((self.config["imgsz"][0] - delta_h) / shape[0])    # ymax
+        return detections
+
+
+    def figure_boxes(self, detections: np.ndarray, image: np.ndarray, ignore_overlap_box: bool = False) -> np.ndarray:
+        """将框画到原图
+
+        Args:
+            detections (np.ndarray): np.float32
+                    [
+                        [class_index, confidences, xmin, ymin, xmax, ymax],
+                        ...
+                    ]
             image (np.ndarray): 原图
             ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
@@ -147,15 +169,12 @@ class Inference(ABC):
 
         # Print results and save Figure with detections
         for i, detection in enumerate(detections):
-            classId = int(detection[0])
-            confidence = detection[1]
-            box = detection[2:]
-
-            # 还原到原图尺寸并转化为int                    shape: (h, w)
-            xmin = int(box[0] / ((self.config["imgsz"][1] - delta_w) / image.shape[1]))
-            ymin = int(box[1] / ((self.config["imgsz"][0] - delta_h) / image.shape[0]))
-            xmax = int(box[2] / ((self.config["imgsz"][1] - delta_w) / image.shape[1]))
-            ymax = int(box[3] / ((self.config["imgsz"][0] - delta_h) / image.shape[0]))
+            classId     = int(detection[0])
+            confidence  = detection[1]
+            xmin        = int(detection[2])
+            ymin        = int(detection[3])
+            xmax        = int(detection[4])
+            ymax        = int(detection[5])
             self.logger.info(f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]")
 
             # 绘制框
@@ -187,7 +206,7 @@ class Inference(ABC):
         return image
 
 
-    def get_boxes(self, detections: np.ndarray, delta_w: int, delta_h: int, shape: np.ndarray, ignore_overlap_box: bool = False) -> dict:
+    def get_boxes(self, detections: np.ndarray, shape: np.ndarray, ignore_overlap_box: bool = False) -> dict:
         """返回还原到原图的框
 
         Args:
@@ -196,8 +215,6 @@ class Inference(ABC):
                         [class_index, confidences, xmin, ymin, xmax, ymax],
                         ...
                     ]
-            delta_w (int):      填充的宽
-            delta_h (int):      填充的高
             shape (np.ndarray): (h, w, c)
             ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
@@ -222,11 +239,10 @@ class Inference(ABC):
         for detection in detections:
             count.append(int(detection[0]))   # 计数
             box = [None] * 4
-            # 还原到原图尺寸并转化为int                                          shape: (h, w)
-            box[0] = int(detection[2] / ((self.config["imgsz"][1] - delta_w) / shape[1]))    # xmin
-            box[1] = int(detection[3] / ((self.config["imgsz"][0] - delta_h) / shape[0]))    # ymin
-            box[2] = int(detection[4] / ((self.config["imgsz"][1] - delta_w) / shape[1]))    # xmax
-            box[3] = int(detection[5] / ((self.config["imgsz"][0] - delta_h) / shape[0]))    # ymax
+            box[0] = int(detection[2])    # xmin
+            box[1] = int(detection[3])    # ymin
+            box[2] = int(detection[4])    # xmax
+            box[3] = int(detection[5])    # ymax
             res.append({"class_index": int(detection[0]), "class": self.config["names"][int(detection[0])], "confidence": detection[1], "box": box})
         detect["detect"] = res
         # 类别计数
@@ -236,13 +252,15 @@ class Inference(ABC):
         return detect
 
 
-    def single(self, image_rgb: np.ndarray) -> np.ndarray:
+    def single(self, image_rgb: np.ndarray, only_get_boxes: bool = False) -> dict | tuple[dict, np.ndarray]:
         """单张图片推理
+
         Args:
-            image_rgb (np.ndarray):   rgb图片
+            image_rgb (np.ndarray):          rgb图片
+            only_get_boxes (bool, optional): 是否只获取boxes. Defaults to False.
 
         Returns:
-            np.ndarray: 绘制好的图片
+            dict | tuple[dict, np.ndarray]:  预测结果和绘制好的图片
         """
 
         # 1. 缩放图片,扩展的宽高
@@ -255,62 +273,34 @@ class Inference(ABC):
         boxes = self.infer(input_array)
         # print(boxes[0].shape)       # [1, 25200, 85]
 
-        # 3. Postprocessing including NMS
+        # 3. NMS
         t3 = time.time()
         detections = boxes[0][0]    # [25200, 85]
         detections = self.nms(detections)
+        # 4. 将坐标还原到原图尺寸
+        detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
         t4 = time.time()
-        image = self.figure_boxes(detections, delta_w, delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+        # 5. 画图或者获取json
+        detect = self.get_boxes(detections, image_rgb.shape) # shape: (h, w, c)
+        if not only_get_boxes:
+            image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
         t5 = time.time()
         self.logger.info(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
 
-        # 4. 返回图片
-        return image
+        # 6. 返回结果
+        if not only_get_boxes:
+            return detect, image
+        else:
+            return detect
 
 
-    def single_get_boxes(self, image_rgb: np.ndarray) -> dict:
-        """单张图片推理
-        Args:
-            image_path (str):   图片路径
-
-        Returns:
-            detect (dict):  {
-                            "detect":     [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}...],    box为int类型
-                            "num":        {"Person": 4, "Bus": 1},
-                            "image_size": [height, width, Channel]
-                            }
-        """
-
-        # 1. 缩放的图片,扩展的宽高
-        t1 = time.time()
-        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
-        input_array = transform(image_reized, self.openvino_preprocess)
-
-        # 2. 推理
-        t2 = time.time()
-        boxes = self.infer(input_array)
-        # print(boxes[0].shape)       # [1, 25200, 85]
-
-        # 3. Postprocessing including NMS
-        t3 = time.time()
-        detections = boxes[0][0]    # [25200, 85]
-        detections = self.nms(detections)
-        t4 = time.time()
-        detect = self.get_boxes(detections, delta_w, delta_h, image_rgb.shape) # shape: (h, w, c)
-        t5 = time.time()
-
-        self.logger.info(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, get boxes time: {int((t5-t4) * 1000)} ms")
-
-        # 4. 返回detect
-        return detect
-
-
-    def multi(self, image_dir: str, save_dir: str):
+    def multi(self, image_dir: str, save_dir: str, save_xml: bool = False) -> None:
         """单张图片推理
 
         Args:
             image_dir (str):    图片文件夹路径
             save_dir (str):     图片文件夹保存路径
+            save_xml (bool, optional): 是否保存xml文件. Defaults to False.
         """
         if not os.path.exists(save_dir):
             print(f"The save path {save_dir} does not exist, it has been created")
@@ -341,15 +331,18 @@ class Inference(ABC):
             boxes = self.infer(input_array)
             # print(boxes[0].shape)       # [1, 25200, 85]
 
-            # 5. Postprocessing including NMS
+            # 5. NMS
             t3 = time.time()
             detections = boxes[0][0]    # [25200, 85]
             detections = self.nms(detections)
+            # 6. 将坐标还原到原图尺寸
+            detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
             t4 = time.time()
-            image = self.figure_boxes(detections, delta_w, delta_h, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+            # 7. 画图
+            image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
             t5 = time.time()
 
-            # 6. 记录时间
+            # 8. 记录时间
             trans_time   = int((t2-t1) * 1000)
             infer_time   = int((t3-t2) * 1000)
             nms_time     = int((t4-t3) * 1000)
@@ -360,7 +353,10 @@ class Inference(ABC):
             figure_times += figure_times
             self.logger.info(f"transform time: {trans_time} ms, infer time: {infer_time} ms, nms time: {nms_time} ms, figure time: {figure_time} ms")
 
-            # 7.保存图片
+            # 9.保存图片
             cv2.imwrite(os.path.join(save_dir, image_file), image)
+            # 10.保存xml
+            if save_xml:
+                array2xml(detections, image_rgb.shape, self.config["names"], save_dir, "".join(image_file.split(".")[:-1]))
 
         self.logger.info(f"avg transform time: {trans_times / len(image_paths)} ms, avg infer time: {infer_times / len(image_paths)} ms, avg nms time: {nms_times / len(image_paths)} ms, avg figure time: {figure_times / len(image_paths)} ms")

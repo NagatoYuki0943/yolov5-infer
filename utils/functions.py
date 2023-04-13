@@ -278,19 +278,67 @@ xml_string = """
 </annotation>
 """
 root = fromstring(xml_string)
+# 获取临时object
+base_object = copy.deepcopy(root.find("object"))
+
+
+def array2xml(data: np.ndarray, shape: tuple[int], names: list[str], path: str, file_name: str):
+    """将检测的array转换为xml并保存
+
+    Args:
+        data (np.ndarray):  array数据
+                [
+                    [class_index, confidences, xmin, ymin, xmax, ymax],
+                    ...
+                ]
+        shape (tuple[int]): 原图shape. (h, w, c)
+        names (list[str]):  名称列表
+        path (str):         保存路径
+        file_name (str):    文件名
+    """
+    # 删除全部的object
+    for o in root.findall("object"):
+        root.remove(o)
+
+    # 保存文件名
+    root.find("filename").text = file_name + ".jpg"
+
+    # 保存图片大小通道
+    root.find("size").find('height').text = str(shape[0])
+    root.find("size").find('width').text  = str(shape[1])
+    root.find("size").find('depth').text  = str(shape[2])
+
+    # 循环遍历保存框
+    for rectange in data:
+        # 需要重新copy,不然多个框只会保存最后一个
+        temp_object = copy.deepcopy(base_object)
+        # 保存类别名称和坐标
+        temp_object.find("name").text = names[int(rectange[0])]
+
+        temp_object.find("bndbox").find("xmin").text = str(int(rectange[2]))
+        temp_object.find("bndbox").find("ymin").text = str(int(rectange[3]))
+        temp_object.find("bndbox").find("xmax").text = str(int(rectange[4]))
+        temp_object.find("bndbox").find("ymax").text = str(int(rectange[5]))
+
+        # 将框保存起来
+        root.append(temp_object)
+
+    # 缩进root
+    indent(root)
+    new_tree = ET.ElementTree(root)
+    xml_path = os.path.join(path, file_name+".xml")
+    # 打开使用utf-8,写入时也需要utf-8
+    new_tree.write(xml_path, encoding="utf-8")
 
 
 def json2xml(data: dict, path: str, file_name: str):
     """将检测的json转换为xml并保存
 
     Args:
-        data (dict): json数据
-        path (str): 保存路径
+        data (dict):     json数据
+        path (str):      保存路径
         file_name (str): 文件名
     """
-    # 获取临时object
-    base_object = copy.deepcopy(root.find("object"))
-
     # 删除全部的object
     for o in root.findall("object"):
         root.remove(o)
@@ -311,10 +359,10 @@ def json2xml(data: dict, path: str, file_name: str):
         # 保存类别名称和坐标
         temp_object.find("name").text = rectange["class"]
 
-        temp_object.find("bndbox").find("xmin").text = str(rectange["box"][0])
-        temp_object.find("bndbox").find("ymin").text = str(rectange["box"][1])
-        temp_object.find("bndbox").find("xmax").text = str(rectange["box"][2])
-        temp_object.find("bndbox").find("ymax").text = str(rectange["box"][3])
+        temp_object.find("bndbox").find("xmin").text = str(int(rectange["box"][0]))
+        temp_object.find("bndbox").find("ymin").text = str(int(rectange["box"][1]))
+        temp_object.find("bndbox").find("xmax").text = str(int(rectange["box"][2]))
+        temp_object.find("bndbox").find("ymax").text = str(int(rectange["box"][3]))
 
         # 将框保存起来
         root.append(temp_object)
@@ -325,7 +373,6 @@ def json2xml(data: dict, path: str, file_name: str):
     xml_path = os.path.join(path, file_name+".xml")
     # 打开使用utf-8,写入时也需要utf-8
     new_tree.write(xml_path, encoding="utf-8")
-
 
 
 if __name__ == "__main__":
