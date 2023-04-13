@@ -230,7 +230,7 @@ class Inference(ABC):
             res.append({"class_index": int(detection[0]), "class": self.config["names"][int(detection[0])], "confidence": detection[1], "box": box})
         detect["detect"] = res
         # 类别计数
-        detect["num"] = dict(Counter(count))
+        detect["count"] = dict(Counter(count))
         # 图片形状
         detect["image_size"] = shape # 添加 (h, w, c)
         return detect
