@@ -1,5 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import fromstring
 import copy
 import yaml
 import cv2
@@ -242,8 +243,41 @@ def indent(elem, level=0):
             elem.tail = i
 
 
-with open("base.xml", mode="r", encoding="utf-8") as f:
-    tree = ET.parse(f)
+xml_string = """
+<annotation>
+	<folder>VOC2007</folder>
+	<filename>000001.jpg</filename>
+	<source>
+		<database>The VOC2007 Database</database>
+		<annotation>PASCAL VOC2007</annotation>
+		<image>flickr</image>
+		<flickrid>341012865</flickrid>
+	</source>
+	<owner>
+		<flickrid>Fried Camels</flickrid>
+		<name>Jinky the Fruit Bat</name>
+	</owner>
+	<size>
+		<width>353</width>
+		<height>500</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>dog</name>
+		<pose>Left</pose>
+		<truncated>1</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>48</xmin>
+			<ymin>240</ymin>
+			<xmax>195</xmax>
+			<ymax>371</ymax>
+		</bndbox>
+	</object>
+</annotation>
+"""
+root = fromstring(xml_string)
 
 
 def json2xml(data: dict, path: str, file_name: str):
@@ -254,7 +288,6 @@ def json2xml(data: dict, path: str, file_name: str):
         path (str): 保存路径
         file_name (str): 文件名
     """
-    root = tree.getroot()
     # 获取临时object
     base_object = copy.deepcopy(root.find("object"))
 

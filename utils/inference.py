@@ -105,8 +105,8 @@ class Inference(ABC):
         # 防止框超出图片边界, 前面判断为True/False,后面选择更改的列,不选择更改的列会将整行都改为0
         boxes[boxes[:, 0] < 0.0, 0] = 0.0
         boxes[boxes[:, 1] < 0.0, 1] = 0.0
-        boxes[boxes[:, 2] > self.config["size"][1], 2] = self.config["size"][1]
-        boxes[boxes[:, 3] > self.config["size"][0], 3] = self.config["size"][0]
+        boxes[boxes[:, 2] > self.config["imgsz"][1], 2] = self.config["imgsz"][1]
+        boxes[boxes[:, 3] > self.config["imgsz"][0], 3] = self.config["imgsz"][0]
 
         # [
         #   [class_index, confidences, xmin, ymin, xmax, ymax],
@@ -152,10 +152,10 @@ class Inference(ABC):
             box = detection[2:]
 
             # 还原到原图尺寸并转化为int                    shape: (h, w)
-            xmin = int(box[0] / ((self.config["size"][1] - delta_w) / image.shape[1]))
-            ymin = int(box[1] / ((self.config["size"][0] - delta_h) / image.shape[0]))
-            xmax = int(box[2] / ((self.config["size"][1] - delta_w) / image.shape[1]))
-            ymax = int(box[3] / ((self.config["size"][0] - delta_h) / image.shape[0]))
+            xmin = int(box[0] / ((self.config["imgsz"][1] - delta_w) / image.shape[1]))
+            ymin = int(box[1] / ((self.config["imgsz"][0] - delta_h) / image.shape[0]))
+            xmax = int(box[2] / ((self.config["imgsz"][1] - delta_w) / image.shape[1]))
+            ymax = int(box[3] / ((self.config["imgsz"][0] - delta_h) / image.shape[0]))
             self.logger.info(f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]")
 
             # 绘制框
@@ -223,10 +223,10 @@ class Inference(ABC):
             count.append(int(detection[0]))   # 计数
             box = [None] * 4
             # 还原到原图尺寸并转化为int                                          shape: (h, w)
-            box[0] = int(detection[2] / ((self.config["size"][1] - delta_w) / shape[1]))    # xmin
-            box[1] = int(detection[3] / ((self.config["size"][0] - delta_h) / shape[0]))    # ymin
-            box[2] = int(detection[4] / ((self.config["size"][1] - delta_w) / shape[1]))    # xmax
-            box[3] = int(detection[5] / ((self.config["size"][0] - delta_h) / shape[0]))    # ymax
+            box[0] = int(detection[2] / ((self.config["imgsz"][1] - delta_w) / shape[1]))    # xmin
+            box[1] = int(detection[3] / ((self.config["imgsz"][0] - delta_h) / shape[0]))    # ymin
+            box[2] = int(detection[4] / ((self.config["imgsz"][1] - delta_w) / shape[1]))    # xmax
+            box[3] = int(detection[5] / ((self.config["imgsz"][0] - delta_h) / shape[0]))    # ymax
             res.append({"class_index": int(detection[0]), "class": self.config["names"][int(detection[0])], "confidence": detection[1], "box": box})
         detect["detect"] = res
         # 类别计数
@@ -247,7 +247,7 @@ class Inference(ABC):
 
         # 1. 缩放图片,扩展的宽高
         t1 = time.time()
-        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["size"])
+        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
         input_array = transform(image_reized, self.openvino_preprocess)
 
         # 2. 推理
@@ -283,7 +283,7 @@ class Inference(ABC):
 
         # 1. 缩放的图片,扩展的宽高
         t1 = time.time()
-        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["size"])
+        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
         input_array = transform(image_reized, self.openvino_preprocess)
 
         # 2. 推理
@@ -333,7 +333,7 @@ class Inference(ABC):
             # 3. 获取图片,缩放的图片,扩展的宽高
             t1 = time.time()
             image_rgb = get_image(image_path)
-            image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["size"])
+            image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
             input_array = transform(image_reized, self.openvino_preprocess)
 
             # 4. 推理

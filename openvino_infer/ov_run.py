@@ -97,7 +97,7 @@ class OVInference(Inference):
         """预热模型
         """
         # [B, C, H, W]
-        x = np.zeros((1, 3, *self.config["size"]), dtype=np.float32)
+        x = np.zeros((1, 3, *self.config["imgsz"]), dtype=np.float32)
         self.infer(x)
         self.logger.info("warmup finish")
 
