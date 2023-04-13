@@ -220,7 +220,7 @@ class Inference(ABC):
         count = []  # 类别计数
         res = []
         for detection in detections:
-            count.append(self.config["names"][int(detection[0])])   # 计数
+            count.append(int(detection[0]))   # 计数
             box = [None] * 4
             # 还原到原图尺寸并转化为int                                          shape: (h, w)
             box[0] = int(detection[2] / ((self.config["size"][1] - delta_w) / shape[1]))    # xmin
