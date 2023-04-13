@@ -13,8 +13,9 @@ def remap(data: dict, remap_dict: dict) -> dict:
     """
     new_count = []
     for box in data["detect"]:
+        # 去除名字
         box.pop("class")
-        print(box["class_index"])
+        # 映射id
         box["class_index"] = remap_dict[box["class_index"]]
 
         # 忽略new_id为0的类别,这个类别不要
@@ -24,6 +25,7 @@ def remap(data: dict, remap_dict: dict) -> dict:
 
         new_count.append(box["class_index"])
 
+    # reamp id 计数
     data["count"] = dict(Counter(new_count))
 
     return data

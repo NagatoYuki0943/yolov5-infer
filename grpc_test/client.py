@@ -3,7 +3,6 @@ import cv2
 import os
 import grpc
 import base64
-import pickle
 import json
 import object_detect_pb2
 import object_detect_pb2_grpc
@@ -45,12 +44,11 @@ def run():
     print(image.shape, image.dtype)
     cv2.imwrite(os.path.join(CLIENT_SAVE_PATH, "bus.jpg"), image)
 
-    # 解码检测结果                             detect是Response中设定的变量
-    detect_decode = base64.b64decode(response.detect)
-    detect_res = pickle.loads(detect_decode)
+    # 解码检测结果                detect是Response中设定的变量
+    detect = json.loads(response.detect)
     with open(os.path.join(CLIENT_SAVE_PATH, "detect.json"), mode="w", encoding="utf-8") as f:
-        json.dump(detect_res, f, indent=4, ensure_ascii=False) # ensure_ascii=False 保存为中文
-    print(detect_res)
+        json.dump(detect, f, indent=4, ensure_ascii=False) # ensure_ascii=False 保存为中文
+    print(detect)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import cv2
 import os
 import time
 import grpc
-import pickle
+import json
 from concurrent import futures
 import base64
 import object_detect_pb2
@@ -18,7 +18,7 @@ from utils.functions import json2xml
 SERVER_HOST = "localhost:50054"
 SERVER_SAVE_PATH = "server"
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
-SAVE = True # 是否保存图片和xml
+SAVE = False # 是否保存图片和xml
 
 
 class Server(object_detect_pb2_grpc.YoloDetectServicer):
@@ -60,14 +60,11 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
         image_64 = base64.b64encode(image_encode)
 
         #=====================编码结果=====================#
-        # 使用pickle序列化预测结果
-        pickle_detect = pickle.dumps(detect)
-        # 编码
-        detect_64 = base64.b64encode(pickle_detect)
+        detect_str = json.dumps(detect)
 
         #==================返回图片和结果===================#
         #                                 image和detect是Response中设定的变量
-        return object_detect_pb2.Response(image=image_64, detect=detect_64)
+        return object_detect_pb2.Response(image=image_64, detect=detect_str)
 
 
 def get_inference():
