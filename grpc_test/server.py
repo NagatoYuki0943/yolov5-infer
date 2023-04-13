@@ -10,9 +10,9 @@ import object_detect_pb2
 import object_detect_pb2_grpc
 
 import sys
-from funcs import json2xml
 sys.path.append("../")
 from onnxruntime_infer import OrtInference
+from utils.functions import json2xml
 
 
 SERVER_HOST = "localhost:50054"
