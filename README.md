@@ -132,7 +132,7 @@ IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-result, image_bgr_detect = inference.single(image_rgb)
+result, image_bgr_detect = inference.single(image_rgb, only_get_boxes=False)
 print(result)
 cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
@@ -171,7 +171,7 @@ IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-result, image_bgr_detect = inference.single(image_rgb)
+result, image_bgr_detect = inference.single(image_rgb, only_get_boxes=False)
 print(result)
 cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
@@ -208,7 +208,7 @@ IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-result, image_bgr_detect = inference.single(image_rgb)
+result, image_bgr_detect = inference.single(image_rgb, only_get_boxes=False)
 print(result)
 cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)

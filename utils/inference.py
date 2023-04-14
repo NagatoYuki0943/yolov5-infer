@@ -226,7 +226,7 @@ class Inference(ABC):
         detect = {} # 结果返回一个dict
         count = []  # 类别计数
         res = []
-        for detection in detections:
+        for i, detection in enumerate(detections):
             count.append(int(detection[0]))   # 计数
             box = [None] * 4
             box[0] = int(detection[2])    # xmin
@@ -234,6 +234,8 @@ class Inference(ABC):
             box[2] = int(detection[4])    # xmax
             box[3] = int(detection[5])    # ymax
             res.append({"class_index": int(detection[0]), "class": self.config["names"][int(detection[0])], "confidence": detection[1], "box": box})
+            self.logger.info(f"Bbox {i} Class: {int(detection[0])}, Confidence: {'{:.2f}'.format(detection[1])}, coords: [ xmin: {box[0]}, ymin: {box[1]}, xmax: {box[2]}, ymax: {box[3]} ]")
+
         detect["detect"] = res
         # 类别计数
         detect["count"] = dict(Counter(count))
