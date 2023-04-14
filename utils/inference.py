@@ -221,7 +221,7 @@ class Inference(ABC):
         Returns:
             detect (dict):  {
                             "detect":     [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}...],    box为int类型
-                            "num":        {"Person": 4, "Bus": 1},
+                            "num":        {0: 4, 5: 1},
                             "image_size": [height, width, Channel]
                             }
         """
