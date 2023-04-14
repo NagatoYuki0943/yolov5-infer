@@ -28,4 +28,4 @@ cv2.waitKey(0)
 # 多张图片推理
 IMAGE_DIR = r"../datasets/coco128/images/train2017"
 SAVE_DIR  = r"../datasets/coco128/images/train2017_res"
-# inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True)
+# inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True) # save_xml 保存xml文件

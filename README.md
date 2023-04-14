@@ -116,9 +116,9 @@ import cv2
 
 
 config = {
-    'model_path':           "./weights/yolov5s.onnx",
-    'mode':                 "cpu",
-    'yaml_path':            "./weights/yolov5.yaml",
+    'model_path':           r"./weights/yolov5s.onnx",
+    'mode':                 r"cpu",
+    'yaml_path':            r"./weights/yolov5.yaml",
     'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
     'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
     'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
@@ -128,23 +128,24 @@ config = {
 inference = OrtInference(**config)
 
 # 读取图片
-IMAGE_PATH = "./images/bus.jpg"
+IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-res = inference.single(image_rgb)
-cv2.imshow("res", res)
+result, image_bgr_detect = inference.single(image_rgb)
+print(result)
+cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
-print(inference.single_get_boxes(image_rgb))
 
 # 多张图片推理
-IMAGE_DIR = "../datasets/coco128/images/train2017"
-SAVE_DIR  = "../datasets/coco128/images/train2017_res"
-# inference.multi(IMAGE_DIR, SAVE_DIR)
-
+IMAGE_DIR = r"../datasets/coco128/images/train2017"
+SAVE_DIR  = r"../datasets/coco128/images/train2017_res"
+# inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True) # save_xml 保存xml文件
 ```
 
 # OpenVINO推理例子
+
+> 安装openvino方法请看openvino文件夹的`readme.md`
 
 ```python
 from openvino_infer import OVInference
@@ -153,9 +154,9 @@ import cv2
 
 
 config = {
-    'model_path':           "./weights/yolov5s_openvino_model/yolov5s.xml",
-    'mode':                 "cpu",
-    'yaml_path':            "./weights/yolov5.yaml",
+    'model_path':           r"./weights/yolov5s_openvino_model/yolov5s.xml",
+    'mode':                 r"cpu",
+    'yaml_path':            r"./weights/yolov5.yaml",
     'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
     'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
     'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
@@ -166,23 +167,24 @@ config = {
 inference = OVInference(**config)
 
 # 读取图片
-IMAGE_PATH = "./images/bus.jpg"
+IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-res = inference.single(image_rgb)
-cv2.imshow("res", res)
+result, image_bgr_detect = inference.single(image_rgb)
+print(result)
+cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
-print(inference.single_get_boxes(image_rgb))
 
 # 多张图片推理
-IMAGE_DIR = "../datasets/coco128/images/train2017"
-SAVE_DIR  = "../datasets/coco128/images/train2017_res"
-# inference.multi(IMAGE_DIR, SAVE_DIR)
-
+IMAGE_DIR = r"../datasets/coco128/images/train2017"
+SAVE_DIR  = r"../datasets/coco128/images/train2017_res"
+# inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True) # save_xml 保存xml文件
 ```
 
 # TensorRT推理例子
+
+> 安装tensorrt方法请看tensorrt文件夹的`readme.md`
 
 ```python
 from tensorrt_infer import TensorRTInfer
@@ -191,8 +193,8 @@ import cv2
 
 
 config = {
-    'model_path':           "./weights/yolov5s.engine",
-    'yaml_path':            "./weights/yolov5.yaml",
+    'model_path':           r"./weights/yolov5s.engine",
+    'yaml_path':            r"./weights/yolov5.yaml",
     'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
     'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
     'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
@@ -202,19 +204,18 @@ config = {
 inference = TensorRTInfer(**config)
 
 # 读取图片
-IMAGE_PATH = "./images/bus.jpg"
+IMAGE_PATH = r"./images/bus.jpg"
 image_rgb = get_image(IMAGE_PATH)
 
 # 单张图片推理
-res = inference.single(image_rgb)
-cv2.imshow("res", res)
+result, image_bgr_detect = inference.single(image_rgb)
+print(result)
+cv2.imshow("res", image_bgr_detect)
 cv2.waitKey(0)
-print(inference.single_get_boxes(image_rgb))
 
 # 多张图片推理
-IMAGE_DIR = "../datasets/coco128/images/train2017"
-SAVE_DIR  = "../datasets/coco128/images/train2017_res"
-# inference.multi(IMAGE_DIR, SAVE_DIR)
-
+IMAGE_DIR = r"../datasets/coco128/images/train2017"
+SAVE_DIR  = r"../datasets/coco128/images/train2017_res"
+# inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True) # save_xml 保存xml文件
 ```
 
