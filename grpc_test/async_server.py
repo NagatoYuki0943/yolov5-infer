@@ -15,7 +15,7 @@ from onnxruntime_infer import OrtInference
 from utils.functions import json2xml
 
 
-SERVER_HOST = "localhost:50054"
+SERVER_HOST      = "localhost:50054"
 SERVER_SAVE_PATH = "server"
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
 SAVE = True # 是否保存图片和xml
@@ -35,13 +35,13 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
         # 解码图片                               image是Request中设定的变量
         image_decode = base64.b64decode(request.image)
         # 变成一个矩阵 单维向量
-        array = np.frombuffer(image_decode, dtype=np.uint8)
+        array        = np.frombuffer(image_decode, dtype=np.uint8)
         # print("array shape:", array.shape)
         # 再解码成图片 三维图片
-        image_bgr = cv2.imdecode(array, cv2.IMREAD_COLOR)
+        image_bgr    = cv2.imdecode(array, cv2.IMREAD_COLOR)
 
         #=====================预测图片=====================#
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        image_rgb    = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         detect, image_bgr_detect = self.inference.single(image_rgb) # 推理返回结果和绘制的图片
 
         #================保存图片和检测结果=================#
@@ -53,13 +53,13 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
 
         #=====================编码图片=====================#
         # 返回True和编码,这里只要编码
-        image_encode = cv2.imencode(".jpg", image_bgr_detect)[1]
+        image_encode  = cv2.imencode(".jpg", image_bgr_detect)[1]
         # image_bytes = image_encode.tobytes()
-        # image_64 = base64.b64encode(image_bytes)
-        image_64 = base64.b64encode(image_encode)
+        # image_64    = base64.b64encode(image_bytes)
+        image_64      = base64.b64encode(image_encode)
 
         #=====================编码结果=====================#
-        detect_str = json.dumps(detect)
+        detect_str    = json.dumps(detect)
 
         #==================返回图片和结果===================#
         #                                 image和detect是Response中设定的变量
