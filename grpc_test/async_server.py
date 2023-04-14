@@ -12,7 +12,7 @@ import asyncio
 import sys
 sys.path.append("../")
 from onnxruntime_infer import OrtInference
-from utils.functions import json2xml
+from utils import Inference, json2xml
 
 
 SERVER_HOST      = "localhost:50054"
@@ -24,7 +24,7 @@ SAVE = True # 是否保存图片和xml
 class Server(object_detect_pb2_grpc.YoloDetectServicer):
     def __init__(self, inference) -> None:
         super().__init__()
-        self.inference = inference
+        self.inference: Inference = inference
 
     async def v5_detect(self, request: object_detect_pb2.Request,
                     context: grpc.aio.ServicerContext)-> object_detect_pb2.Response:
@@ -42,7 +42,7 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
 
         #=====================预测图片=====================#
         image_rgb    = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-        detect, image_bgr_detect = self.inference.single(image_rgb) # 推理返回结果和绘制的图片
+        detect, image_bgr_detect = self.inference.single(image_rgb, only_get_boxes=False) # 推理返回结果和绘制的图片
 
         #================保存图片和检测结果=================#
         if SAVE:

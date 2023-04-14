@@ -173,6 +173,10 @@ def ignore_overlap_boxes(detections: np.ndarray) -> np.ndarray:
                     ...
                 ]
     """
+    # 只有1个框或者没有框就返回
+    if len(detections) <= 1:
+        return detections
+
     new_detections = []
 
     # 获取每个类别
@@ -191,14 +195,14 @@ def ignore_overlap_boxes(detections: np.ndarray) -> np.ndarray:
         index = area.argsort()  # 得到面积排序index
         index = index[::-1]     # 转换为降序
 
-        # max代表大的框,min代表小的框
+        # max_i代表大的框,min_i代表小的框
         keeps = []
-        for i, max in enumerate(index[:-1]):
+        for i, max_i in enumerate(index[:-1]):
             # 默认都不包含
             keep = [False] * len(dets_sig_cls)
-            for min in index[i+1:]:
-                isin = ignore_box2_or_not(dets_sig_cls[max, 2:], dets_sig_cls[min, 2:])
-                keep[min] = isin # 包含
+            for min_i in index[i+1:]:
+                isin = ignore_box2_or_not(dets_sig_cls[max_i, 2:], dets_sig_cls[min_i, 2:])
+                keep[min_i] = isin # 包含
             keeps.append(keep)
         # 取反,原本False为不包含,True为包含,取反后False为不保留,True为保留
         keeps = ~np.array(keeps)

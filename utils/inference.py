@@ -252,15 +252,16 @@ class Inference(ABC):
         return detect
 
 
-    def single(self, image_rgb: np.ndarray, only_get_boxes: bool = False) -> dict | tuple[dict, np.ndarray]:
+    def single(self, image_rgb: np.ndarray, only_get_boxes: bool = False, ignore_overlap_box: bool = False) -> tuple[dict, np.ndarray] | tuple[dict, None]:
         """单张图片推理
 
         Args:
-            image_rgb (np.ndarray):          rgb图片
-            only_get_boxes (bool, optional): 是否只获取boxes. Defaults to False.
+            image_rgb (np.ndarray):              rgb图片
+            only_get_boxes (bool, optional):     是否只获取boxes. Defaults to False.
+            ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
         Returns:
-            dict | tuple[dict, np.ndarray]:  预测结果和绘制好的图片
+            tuple[dict, np.ndarray] | tuple[dict, None]:    预测结果和绘制好的图片
         """
 
         # 1. 缩放图片,扩展的宽高
@@ -281,9 +282,9 @@ class Inference(ABC):
         detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
         t4 = time.time()
         # 5. 画图或者获取json
-        detect = self.get_boxes(detections, image_rgb.shape) # shape: (h, w, c)
+        detect = self.get_boxes(detections, image_rgb.shape, ignore_overlap_box) # shape: (h, w, c)
         if not only_get_boxes:
-            image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
+            image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR), ignore_overlap_box)
         t5 = time.time()
         self.logger.info(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
 
@@ -291,16 +292,17 @@ class Inference(ABC):
         if not only_get_boxes:
             return detect, image
         else:
-            return detect
+            return detect, None
 
 
-    def multi(self, image_dir: str, save_dir: str, save_xml: bool = False) -> None:
+    def multi(self, image_dir: str, save_dir: str, save_xml: bool = False, ignore_overlap_box: bool = False) -> None:
         """单张图片推理
 
         Args:
-            image_dir (str):    图片文件夹路径
-            save_dir (str):     图片文件夹保存路径
-            save_xml (bool, optional): 是否保存xml文件. Defaults to False.
+            image_dir (str):                     图片文件夹路径
+            save_dir (str):                      图片文件夹保存路径
+            save_xml (bool, optional):           是否保存xml文件. Defaults to False.
+            ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
         """
         if not os.path.exists(save_dir):
             print(f"The save path {save_dir} does not exist, it has been created")
@@ -339,6 +341,8 @@ class Inference(ABC):
             detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
             t4 = time.time()
             # 7. 画图
+            if ignore_overlap_box: # 忽略重叠的框
+                detections = ignore_overlap_boxes(detections)
             image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
             t5 = time.time()
 

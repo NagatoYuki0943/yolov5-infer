@@ -162,12 +162,12 @@ if __name__ == "__main__":
     IMAGE_PATH   = r"../images/bus.jpg"
     SAVE_PATH    = r"./trt_det.jpg"
     image_rgb = get_image(IMAGE_PATH)
-    result, image_bgr_detect = inference.single(image_rgb)
+    result, image_bgr_detect = inference.single(image_rgb, only_get_boxes=False)
     print(result)
     cv2.imwrite(SAVE_PATH, image_bgr_detect)
 
     # 多张图片推理
     IMAGE_DIR = r"../../datasets/coco128/images/train2017"
     SAVE_DIR  = r"../../datasets/coco128/images/train2017_res"
-    # inference.multi(IMAGE_DIR, SAVE_DIR)
+    # inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True)
     # avg transform time: 3.8984375 ms, avg infer time: 7.734375 ms, avg nms time: 0.0234375 ms, avg figure time: 0.0 ms
