@@ -140,7 +140,7 @@ class Inference(ABC):
         return detections
 
 
-    def figure_boxes(self, detections: np.ndarray, image: np.ndarray, ignore_overlap_box: bool = False) -> np.ndarray:
+    def figure_boxes(self, detections: np.ndarray, image: np.ndarray) -> np.ndarray:
         """将框画到原图
 
         Args:
@@ -150,7 +150,6 @@ class Inference(ABC):
                         ...
                     ]
             image (np.ndarray): 原图
-            ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
         Returns:
             np.ndarray: 绘制的图
@@ -159,10 +158,6 @@ class Inference(ABC):
             self.logger.warning("no detection")
             # 返回原图
             return image
-
-        # 忽略重叠的小框,不同于nms
-        if ignore_overlap_box:
-            detections = ignore_overlap_boxes(detections)
 
         # 获取不同颜色
         colors = mulit_colors(len(self.config["names"].keys()))
@@ -206,7 +201,7 @@ class Inference(ABC):
         return image
 
 
-    def get_boxes(self, detections: np.ndarray, shape: np.ndarray, ignore_overlap_box: bool = False) -> dict:
+    def get_boxes(self, detections: np.ndarray, shape: np.ndarray) -> dict:
         """返回还原到原图的框
 
         Args:
@@ -216,22 +211,17 @@ class Inference(ABC):
                         ...
                     ]
             shape (np.ndarray): (h, w, c)
-            ignore_overlap_box (bool, optional): 是否忽略重叠的小框,不同于nms. Defaults to False.
 
         Returns:
             detect (dict):  {
                             "detect":     [{"class_index": class_index, "class": "class_name", "confidence": confidence, "box": [xmin, ymin, xmax, ymax]}...],    box为int类型
                             "num":        {0: 4, 5: 1},
-                            "image_size": [height, width, Channel]
+                            "image_size": [height, width, channel]
                             }
         """
         if len(detections) == 0:
             self.logger.warning("no detection")
             return {"detect": [], "num": {}, "image_size": shape}
-
-        # 忽略重叠的小框,不同于nms
-        if ignore_overlap_box:
-            detections = ignore_overlap_boxes(detections)
 
         detect = {} # 结果返回一个dict
         count = []  # 类别计数
@@ -282,9 +272,11 @@ class Inference(ABC):
         detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
         t4 = time.time()
         # 5. 画图或者获取json
-        detect = self.get_boxes(detections, image_rgb.shape, ignore_overlap_box) # shape: (h, w, c)
+        if ignore_overlap_box:  # 忽略重叠的小框,不同于nms
+            detections = ignore_overlap_boxes(detections)
+        detect = self.get_boxes(detections, image_rgb.shape) # shape: (h, w, c)
         if not only_get_boxes:
-            image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR), ignore_overlap_box)
+            image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
         t5 = time.time()
         self.logger.info(f"transform time: {int((t2-t1) * 1000)} ms, infer time: {int((t3-t2) * 1000)} ms, nms time: {int((t4-t3) * 1000)} ms, figure time: {int((t5-t4) * 1000)} ms")
 
@@ -341,7 +333,7 @@ class Inference(ABC):
             detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
             t4 = time.time()
             # 7. 画图
-            if ignore_overlap_box: # 忽略重叠的框,放到这里而不是给figure_boxes传递参数是因为detections需要被保存为xml,保存xml同样也忽略小目标
+            if ignore_overlap_box: # # 忽略重叠的小框,不同于nms
                 detections = ignore_overlap_boxes(detections)
             image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
             t5 = time.time()
