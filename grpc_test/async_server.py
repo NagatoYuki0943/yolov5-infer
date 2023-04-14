@@ -17,8 +17,8 @@ from utils import Inference, json2xml
 
 SERVER_HOST      = "localhost:50054"
 SERVER_SAVE_PATH = "server"
+SAVE             = True # 是否保存图片和xml
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
-SAVE = True # 是否保存图片和xml
 
 
 class Server(object_detect_pb2_grpc.YoloDetectServicer):
@@ -33,22 +33,22 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
         """
         #=====================接收图片=====================#
         try:
-            # 解码图片                               image是Request中设定的变量
-            image_decode = base64.b64decode(request.image)
+            # 解码图片                                  image是Request中设定的变量
+            image_decode    = base64.b64decode(request.image)
             # 变成一个矩阵 单维向量
-            array        = np.frombuffer(image_decode, dtype=np.uint8)
+            array           = np.frombuffer(image_decode, dtype=np.uint8)
             # print("array shape:", array.shape)
             # 再解码成图片 三维图片
-            image_bgr    = cv2.imdecode(array, cv2.IMREAD_COLOR)
+            image_bgr       = cv2.imdecode(array, cv2.IMREAD_COLOR)
         except:
-            self.inference.logger.error("decode image fail!")
+            self.inference.logger.error("decode image fail!!!")
             fake_image      = np.array([])
             fake_image_64   = base64.b64encode(fake_image)
             fake_detect_str = json.dumps({})
             return object_detect_pb2.Response(image=fake_image_64, detect=fake_detect_str)
 
         #=====================预测图片=====================#
-        image_rgb    = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        image_rgb                = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
         detect, image_bgr_detect = self.inference.single(image_rgb, only_get_boxes=False) # 推理返回结果和绘制的图片
 
         #================保存图片和检测结果=================#

@@ -36,6 +36,15 @@ async def run():
         #                                                        image是Request中设定的变量
         response = await stub.v5_detect(object_detect_pb2.Request(image=image_64))
 
+    # 解码检测结果                      detect是Response中设定的变量
+    detect       = json.loads(response.detect)
+    with open(os.path.join(CLIENT_SAVE_PATH, "detect.json"), mode="w", encoding="utf-8") as f:
+        json.dump(detect, f, indent=4, ensure_ascii=False) # ensure_ascii=False 保存为中文
+    print(detect)
+    if detect == {}:
+        print("detect error!!!")
+        return
+
     # 解码图片                                image是Response中设定的变量
     image_decode = base64.b64decode(response.image)
     # 变成一个矩阵 单维向量
@@ -44,12 +53,6 @@ async def run():
     image        = cv2.imdecode(array, cv2.IMREAD_COLOR)
     print(image.shape, image.dtype)
     cv2.imwrite(os.path.join(CLIENT_SAVE_PATH, "bus.jpg"), image)
-
-    # 解码检测结果                detect是Response中设定的变量
-    detect       = json.loads(response.detect)
-    with open(os.path.join(CLIENT_SAVE_PATH, "detect.json"), mode="w", encoding="utf-8") as f:
-        json.dump(detect, f, indent=4, ensure_ascii=False) # ensure_ascii=False 保存为中文
-    print(detect)
 
 
 if __name__ == "__main__":
