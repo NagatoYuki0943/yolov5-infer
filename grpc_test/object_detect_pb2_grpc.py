@@ -6,7 +6,7 @@ import object_detect_pb2 as object__detect__pb2
 
 
 class YoloDetectStub(object):
-    """服务定义，这个就是我们在程序中要定义的类了，类名就是YoloV5Detect
+    """服务定义，这个就是我们在程序中要定义的类了，类名就是YoloDetect
     """
 
     def __init__(self, channel):
@@ -15,18 +15,18 @@ class YoloDetectStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.V5Detect = channel.unary_unary(
-                '/object_detect.YoloDetect/V5Detect',
+        self.v5_detect = channel.unary_unary(
+                '/object_detect.YoloDetect/v5_detect',
                 request_serializer=object__detect__pb2.Request.SerializeToString,
                 response_deserializer=object__detect__pb2.Response.FromString,
                 )
 
 
 class YoloDetectServicer(object):
-    """服务定义，这个就是我们在程序中要定义的类了，类名就是YoloV5Detect
+    """服务定义，这个就是我们在程序中要定义的类了，类名就是YoloDetect
     """
 
-    def V5Detect(self, request, context):
+    def v5_detect(self, request, context):
         """函数定义 data_request参数 data_reply返回数据,这个就是在服务器要实现的方法了，是个函数
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -36,8 +36,8 @@ class YoloDetectServicer(object):
 
 def add_YoloDetectServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'V5Detect': grpc.unary_unary_rpc_method_handler(
-                    servicer.V5Detect,
+            'v5_detect': grpc.unary_unary_rpc_method_handler(
+                    servicer.v5_detect,
                     request_deserializer=object__detect__pb2.Request.FromString,
                     response_serializer=object__detect__pb2.Response.SerializeToString,
             ),
@@ -49,11 +49,11 @@ def add_YoloDetectServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class YoloDetect(object):
-    """服务定义，这个就是我们在程序中要定义的类了，类名就是YoloV5Detect
+    """服务定义，这个就是我们在程序中要定义的类了，类名就是YoloDetect
     """
 
     @staticmethod
-    def V5Detect(request,
+    def v5_detect(request,
             target,
             options=(),
             channel_credentials=None,
@@ -63,7 +63,7 @@ class YoloDetect(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/object_detect.YoloDetect/V5Detect',
+        return grpc.experimental.unary_unary(request, target, '/object_detect.YoloDetect/v5_detect',
             object__detect__pb2.Request.SerializeToString,
             object__detect__pb2.Response.FromString,
             options, channel_credentials,

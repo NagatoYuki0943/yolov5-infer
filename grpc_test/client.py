@@ -31,9 +31,9 @@ def run():
         stub = object_detect_pb2_grpc.YoloDetectStub(channel)
 
         #=================发送并接收新图片==================#
-        # V5Detect是proto中service YoloDetect中的rpc V5Detect
+        # v5_detect是proto中service YoloDetect中的rpc v5_detect
         #                                                  image是Request中设定的变量
-        response = stub.V5Detect(object_detect_pb2.Request(image=image_64))
+        response = stub.v5_detect(object_detect_pb2.Request(image=image_64))
 
     # 解码图片                                image是Response中设定的变量
     image_decode = base64.b64decode(response.image)

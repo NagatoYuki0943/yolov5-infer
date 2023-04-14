@@ -26,10 +26,10 @@ class Server(object_detect_pb2_grpc.YoloDetectServicer):
         super().__init__()
         self.inference = inference
 
-    async def V5Detect(self, request: object_detect_pb2.Request,
+    async def v5_detect(self, request: object_detect_pb2.Request,
                     context: grpc.aio.ServicerContext)-> object_detect_pb2.Response:
         """接收request,返回response
-        V5Detect是proto中service YoloDetecte中的rpc V5Detect
+        v5_detect是proto中service YoloDetecte中的rpc v5_detect
         """
         #=====================接收图片=====================#
         # 解码图片                               image是Request中设定的变量
