@@ -341,7 +341,7 @@ class Inference(ABC):
             detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
             t4 = time.time()
             # 7. 画图
-            if ignore_overlap_box: # 忽略重叠的框
+            if ignore_overlap_box: # 忽略重叠的框,放到这里而不是给figure_boxes传递参数是因为detections需要被保存为xml,保存xml同样也忽略小目标
                 detections = ignore_overlap_boxes(detections)
             image = self.figure_boxes(detections, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
             t5 = time.time()
