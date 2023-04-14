@@ -16,7 +16,7 @@ https://github.com/dacquaviva/yolov5-openvino-cpp-python
 
 ```yaml
 # infer size
-size:
+imgsz:
   - 640 # height
   - 640 # width
 

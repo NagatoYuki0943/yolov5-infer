@@ -3,7 +3,15 @@
 yaml中内容
 
 ```yaml
+# infer size
+imgsz:
+  - 640 # height
+  - 640 # width
+
+# down sample stride
 stride: 32
+
+# classes
 names:
   0: person
   1: bicycle
