@@ -348,7 +348,7 @@ class Inference(ABC):
             trans_times  += trans_time
             infer_times  += infer_time
             nms_times    += nms_time
-            figure_times += figure_times
+            figure_times += figure_time
             self.logger.info(f"transform time: {trans_time} ms, infer time: {infer_time} ms, nms time: {nms_time} ms, figure time: {figure_time} ms")
 
             # 9.保存图片

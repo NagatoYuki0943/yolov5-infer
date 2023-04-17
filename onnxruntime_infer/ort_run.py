@@ -78,7 +78,8 @@ class OrtInference(Inference):
                         'gpu_mem_limit': 2 * 1024 * 1024 * 1024, # 2GB
                         'cudnn_conv_algo_search': 'EXHAUSTIVE',
                         'do_copy_in_default_stream': True,
-                    })
+                    }),
+                    'CPUExecutionProvider',
                 ]
         }[mode]
 
@@ -129,7 +130,7 @@ class OrtInference(Inference):
 if __name__ == "__main__":
     config = {
         'model_path':           r"../weights/yolov5s.onnx",
-        'mode':                 r"cpu",
+        'mode':                 r"cuda",
         'yaml_path':            r"../weights/yolov5.yaml",
         'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
         'score_threshold':      0.2,    # nms分类得分阈值,越大越严格

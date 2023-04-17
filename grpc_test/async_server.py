@@ -15,8 +15,8 @@ from onnxruntime_infer import OrtInference
 from utils import Inference, json2xml
 
 
-SERVER_HOST      = "localhost:50054"
-SERVER_SAVE_PATH = "server"
+SERVER_HOST      = r"localhost:50051"
+SERVER_SAVE_PATH = r"server"
 SAVE             = True # 是否保存图片和xml
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
 
@@ -77,9 +77,9 @@ def get_inference():
     """获取推理器"""
     # 模型配置文件
     config = {
-        'model_path':           "../weights/yolov5s.onnx",
-        'mode':                 "cpu",
-        'yaml_path':            "../weights/yolov5.yaml",
+        'model_path':           r"../weights/yolov5s.onnx",
+        'mode':                 r"cuda",
+        'yaml_path':            r"../weights/yolov5.yaml",
         'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
         'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
         'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格

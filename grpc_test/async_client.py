@@ -9,8 +9,8 @@ import object_detect_pb2_grpc
 import asyncio
 
 
-SERVER_HOST      = "localhost:50054"
-CLIENT_SAVE_PATH = "client"
+SERVER_HOST      = r"localhost:50051"
+CLIENT_SAVE_PATH = r"client"
 os.makedirs(CLIENT_SAVE_PATH, exist_ok=True)
 
 

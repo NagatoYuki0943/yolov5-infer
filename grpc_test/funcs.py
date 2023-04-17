@@ -1,4 +1,5 @@
 from collections import Counter
+import re
 
 
 def remap(data: dict, remap_dict: dict) -> dict:
@@ -128,3 +129,21 @@ def reformat(data: dict) -> dict:
     new_data["image_size"] = data["image_size"]
 
     return new_data
+
+
+check = re.compile(
+    r'^(?:http|ftp)s?://'   # http:// or https:// or ftp:// or ftps://
+    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+    r'localhost|'           # localhost...
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+    r'(?::\d+)?'            # optional port
+    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+
+def check_is_url(url: str) -> bool:
+    """检查字符串是否为url"""
+    res = check.match(url)
+    if res is None:
+        return False
+    else:
+        return True
