@@ -32,6 +32,9 @@ class Inference(ABC):
         self.openvino_preprocess  = openvino_preprocess
         self.fp16                 = fp16
 
+        # 获取不同颜色
+        self.colors = mulit_colors(len(self.config["names"].keys()))
+
         # logger
         self.logger: logging.Logger = logging.getLogger(name="Inference")
 
@@ -171,9 +174,6 @@ class Inference(ABC):
             # 返回原图
             return image
 
-        # 获取不同颜色
-        colors = mulit_colors(len(self.config["names"].keys()))
-
         # Print results and save Figure with detections
         for i, detection in enumerate(detections):
             classId     = int(detection[0])
@@ -185,9 +185,9 @@ class Inference(ABC):
             self.logger.info(f"Bbox {i} Class: {classId}, Confidence: {'{:.2f}'.format(confidence)}, coords: [ xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax} ]")
 
             # 绘制框
-            image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[classId], 2)
+            image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), self.colors[classId], 2)
             # 直接在原图上绘制文字背景，不透明
-            # image = cv2.rectangle(image, (xmin, ymin - 20), (xmax, ymax)), colors[classId], cv2.FILLED)
+            # image = cv2.rectangle(image, (xmin, ymin - 20), (xmax, ymax)), self.colors[classId], cv2.FILLED)
 
             # 文字
             label = str(self.config["names"][classId]) + " " + "{:.2f}".format(confidence)
@@ -195,7 +195,7 @@ class Inference(ABC):
 
             # 添加文字背景
             temp_image = np.zeros(image.shape).astype(np.uint8)
-            temp_image = cv2.rectangle(temp_image, (xmin, ymin - 20 if ymin > 20 else ymin + h + 10), (xmax, ymin), colors[classId], cv2.FILLED)
+            temp_image = cv2.rectangle(temp_image, (xmin, ymin - 20 if ymin > 20 else ymin + h + 10), (xmax, ymin), self.colors[classId], cv2.FILLED)
             # 叠加原图和文字背景，文字背景是透明的
             image = cv2.addWeighted(image, 1.0, temp_image, 1.0, 1)
 
