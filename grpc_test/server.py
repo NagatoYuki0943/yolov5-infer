@@ -15,7 +15,7 @@ from onnxruntime_infer import OrtInference
 from utils import Inference, json2xml
 
 
-SERVER_HOST      = r"localhost:50051"
+SERVER_HOST      = r"[::]:50051"
 SERVER_SAVE_PATH = r"server"
 SAVE             = True # 是否保存图片和xml
 os.makedirs(SERVER_SAVE_PATH, exist_ok=True)
