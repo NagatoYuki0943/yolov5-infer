@@ -59,6 +59,7 @@ class Inference(ABC):
         """
         raise NotImplementedError
 
+
     def warm_up(self):
         """预热模型
         """
@@ -66,6 +67,7 @@ class Inference(ABC):
         x = np.zeros((1, 3, *self.config["imgsz"]), dtype=np.float16 if self.fp16 else np.float32)
         self.infer(x)
         self.logger.info("warmup finish")
+
 
     def nms(self, detections: np.ndarray) -> np.ndarray:
         """非极大值抑制,所有类别一起做的,没有分开做
