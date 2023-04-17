@@ -5,7 +5,6 @@ import cv2
 
 config = {
     "model_path":           r"./weights/yolov5s_openvino_model/yolov5s.xml",
-    # 使用不同精度的openvino模型不需要提前将图片转换为对应的格式,但ort和trt需要,即需要设定 `fp16=True/False` 参数
     "mode":                 r"cpu",
     "yaml_path":            r"./weights/yolov5.yaml",
     "confidence_threshold": 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格

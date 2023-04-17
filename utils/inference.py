@@ -13,7 +13,6 @@ class Inference(ABC):
                  score_threshold:      float = 0.2,
                  nms_threshold:        float = 0.45,
                  openvino_preprocess:   bool = False,
-                 fp16:                  bool = False,
                  ) -> None:
         """父类推理器
 
@@ -30,7 +29,7 @@ class Inference(ABC):
         self.score_threshold      = score_threshold
         self.nms_threshold        = nms_threshold
         self.openvino_preprocess  = openvino_preprocess
-        self.fp16                 = fp16
+        self.fp16                 = False   # 默认不适用半精度,使用半精度时会自动判断
 
         # 获取不同颜色
         self.colors = mulit_colors(len(self.config["names"].keys()))

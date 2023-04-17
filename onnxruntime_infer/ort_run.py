@@ -87,21 +87,25 @@ class OrtInference(Inference):
 
         model = ort.InferenceSession(onnx_path, sess_options=so, providers=providers)
 
+        # 半精度推理
+        if model.get_inputs()[0].type[7:-1] == "float16":
+            self.fp16 = True
+
         #--------------------------------#
         #   查看model中的内容
         #   get_inputs()返回对象，[0]返回名字
         #--------------------------------#
-        # self.logger.info("model outputs: \n", model.get_inputs())    # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140A770>]
-        # self.logger.info(model.get_inputs()[0])                      # NodeArg(name='images', type='tensor(float)', shape=[1, 3, 640, 640])
-        # self.logger.info(model.get_inputs()[0].name)                 # images
-        # self.logger.info(model.get_inputs()[0].type)                 # tensor(float)
-        # self.logger.info(model.get_inputs()[0].shape, "\n")          # [1, 3, 640, 640]
+        # print("model outputs: \n", model.get_inputs())    # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140A770>]
+        self.logger.info(model.get_inputs()[0])             # NodeArg(name='images', type='tensor(float)', shape=[1, 3, 640, 640])
+        self.logger.info(model.get_inputs()[0].name)        # images
+        self.logger.info(model.get_inputs()[0].type)        # tensor(float) str
+        self.logger.info(model.get_inputs()[0].shape)       # [1, 3, 640, 640]
 
-        # self.logger.info("model outputs: \n", model.get_outputs())   # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140B5B0>]
-        # self.logger.info(model.get_outputs()[0])                     # NodeArg(name='output', type='tensor(float)', shape=[1, 25200, 85])
-        # self.logger.info(model.get_outputs()[0].name)                # output0
-        # self.logger.info(model.get_outputs()[0].type)                # tensor(float)
-        # self.logger.info(model.get_outputs()[0].shape, "\n")         # [1, 25200, 85]
+        # print("model outputs: \n", model.get_outputs())   # 列表 [<onnxruntime.capi.onnxruntime_pybind11_state.NodeArg object at 0x0000023BA140B5B0>]
+        self.logger.info(model.get_outputs()[0])            # NodeArg(name='output', type='tensor(float)', shape=[1, 25200, 85])
+        self.logger.info(model.get_outputs()[0].name)       # output0
+        self.logger.info(model.get_outputs()[0].type)       # tensor(float) str
+        self.logger.info(model.get_outputs()[0].shape)      # [1, 25200, 85]
 
         return model
 
@@ -123,7 +127,6 @@ if __name__ == "__main__":
     config = {
         "model_path":           r"../weights/yolov5s.onnx",
         "mode":                 r"cuda",
-        "fp16":                 False,  # 使用半精度模型必须将图片转换为fp16格式
         "yaml_path":            r"../weights/yolov5.yaml",
         "confidence_threshold": 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
         "score_threshold":      0.2,    # nms分类得分阈值,越大越严格
