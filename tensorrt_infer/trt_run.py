@@ -137,22 +137,15 @@ class TensorRTInfer(Inference):
 
         return result
 
-    def warm_up(self):
-        """预热模型
-        """
-        # [B, C, H, W]
-        x = np.zeros((1, 3, *self.config["imgsz"]), dtype=np.float32)
-        self.infer(x)
-        self.logger.info("warmup finish")
-
 
 if __name__ == "__main__":
     config = {
-        'model_path':           r"../weights/yolov5s.engine",
-        'yaml_path':            r"../weights/yolov5.yaml",
-        'confidence_threshold': 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
-        'score_threshold':      0.2,    # nms分类得分阈值,越大越严格
-        'nms_threshold':        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
+        "model_path":           r"../weights/yolov5s.engine",
+        "fp16":                 False,  # 使用半精度模型必须将图片转换为fp16格式
+        "yaml_path":            r"../weights/yolov5.yaml",
+        "confidence_threshold": 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
+        "score_threshold":      0.2,    # nms分类得分阈值,越大越严格
+        "nms_threshold":        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
     }
 
     # 实例化推理器

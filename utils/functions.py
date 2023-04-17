@@ -69,12 +69,13 @@ def resize_and_pad(image, new_shape):
     return image_reized, delta_w ,delta_h
 
 
-def transform(image: np.ndarray, openvino_preprocess = False) -> np.ndarray:
+def transform(image: np.ndarray, openvino_preprocess: bool = False, fp16: bool = False) -> np.ndarray:
     """图片预处理
 
     Args:
         image (np.ndarray): 经过缩放的图片
         openvino_preprocess (bool, optional): 是否使用了openvino的图片预处理. Defaults to False.
+        fp16 (bool, optional):                半精度推理. Defaults to False.
 
     Returns:
         np.ndarray: 经过预处理的图片
@@ -88,7 +89,11 @@ def transform(image: np.ndarray, openvino_preprocess = False) -> np.ndarray:
         image /= 255.0                      # 归一化
 
     input_array = np.expand_dims(image, 0)  # [C, H, W] -> [B, C, H, W]
-    return input_array
+
+    if fp16:
+        return input_array.astype(np.float16)
+    else:
+        return input_array
 
 
 def mulit_colors(num_classes: int):

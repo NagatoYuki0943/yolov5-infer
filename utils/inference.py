@@ -12,7 +12,8 @@ class Inference(ABC):
                  confidence_threshold: float = 0.25,
                  score_threshold:      float = 0.2,
                  nms_threshold:        float = 0.45,
-                 openvino_preprocess         = False,
+                 openvino_preprocess:   bool = False,
+                 fp16:                  bool = False,
                  ) -> None:
         """父类推理器
 
@@ -22,12 +23,14 @@ class Inference(ABC):
             score_threshold (float):        nms分类得分阈值,越大越严格
             nms_threshold (float):          非极大抑制所用到的nms_iou大小,越小越严格
             openvino_preprocess (bool, optional): openvino图片预处理，只有openvino模型可用. Defaults to False.
+            fp16 (bool, optional):          半精度推理. Defaults to False.
         """
         self.config               = load_yaml(yaml_path)
         self.confidence_threshold = confidence_threshold
         self.score_threshold      = score_threshold
         self.nms_threshold        = nms_threshold
         self.openvino_preprocess  = openvino_preprocess
+        self.fp16                 = fp16
 
         # logger
         self.logger: logging.Logger = logging.getLogger(name="Inference")
@@ -56,6 +59,13 @@ class Inference(ABC):
         """
         raise NotImplementedError
 
+    def warm_up(self):
+        """预热模型
+        """
+        # [B, C, H, W]
+        x = np.zeros((1, 3, *self.config["imgsz"]), dtype=np.float16 if self.fp16 else np.float32)
+        self.infer(x)
+        self.logger.info("warmup finish")
 
     def nms(self, detections: np.ndarray) -> np.ndarray:
         """非极大值抑制,所有类别一起做的,没有分开做
@@ -259,7 +269,7 @@ class Inference(ABC):
         # 1. 缩放图片,扩展的宽高
         t1 = time.time()
         image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
-        input_array = transform(image_reized, self.openvino_preprocess)
+        input_array = transform(image_reized, self.openvino_preprocess, self.fp16)
 
         # 2. 推理
         t2 = time.time()
@@ -320,7 +330,7 @@ class Inference(ABC):
             t1 = time.time()
             image_rgb = get_image(image_path)
             image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
-            input_array = transform(image_reized, self.openvino_preprocess)
+            input_array = transform(image_reized, self.openvino_preprocess, self.fp16)
 
             # 4. 推理
             t2 = time.time()
