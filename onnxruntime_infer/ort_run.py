@@ -105,7 +105,7 @@ class OrtInference(Inference):
 
         return model
 
-    def infer(self, image: np.ndarray) -> list[np.ndarray]:
+    def infer(self, image: np.ndarray) -> np.ndarray:
         """推理单张图片
         Args:
             image (np.ndarray): 图片 [B, C, H, W]
@@ -116,7 +116,7 @@ class OrtInference(Inference):
         # 推理
         boxes = self.model.run(None, {self.inputs[0].name: image})    # 返回值为list
 
-        return boxes
+        return boxes[0]
 
 
 if __name__ == "__main__":

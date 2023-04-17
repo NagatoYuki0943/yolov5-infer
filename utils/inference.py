@@ -276,11 +276,11 @@ class Inference(ABC):
         # 2. 推理
         t2 = time.time()
         boxes = self.infer(input_array)
-        # print(boxes[0].shape)       # [1, 25200, 85]
+        # print(boxes.shape)        # [1, 25200, 85]
 
         # 3. NMS
         t3 = time.time()
-        detections = boxes[0][0]    # [25200, 85]
+        detections = boxes[0]       # [25200, 85]
         detections = self.nms(detections)
         # 4. 将坐标还原到原图尺寸
         detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
@@ -337,11 +337,11 @@ class Inference(ABC):
             # 4. 推理
             t2 = time.time()
             boxes = self.infer(input_array)
-            # print(boxes[0].shape)       # [1, 25200, 85]
+            # print(boxes.shape)        # [1, 25200, 85]
 
             # 5. NMS
             t3 = time.time()
-            detections = boxes[0][0]    # [25200, 85]
+            detections = boxes[0]       # [25200, 85]
             detections = self.nms(detections)
             # 6. 将坐标还原到原图尺寸
             detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)

@@ -94,5 +94,7 @@ def parse_opt():
 python export.py --weights weights/yolov5s.pt --include onnx --simplify
 ```
 
+# 注意
 
+> `onnxruntime-gpu` 使用显卡要使用 `cuda` 和 `cudnn`
 

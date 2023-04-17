@@ -93,7 +93,7 @@ class OVInference(Inference):
         compiled_model = core.compile_model(model, device_name=mode)
         return compiled_model
 
-    def infer(self, image: np.ndarray) -> list[np.ndarray]:
+    def infer(self, image: np.ndarray) -> np.ndarray:
         """推理单张图片
         Args:
             image (np.ndarray): 图片 [B, C, H, W]
@@ -118,7 +118,7 @@ class OVInference(Inference):
 
         boxes = results[self.outputs[0]]
 
-        return [boxes]
+        return boxes
 
 
 if __name__ == "__main__":

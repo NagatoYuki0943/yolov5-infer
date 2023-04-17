@@ -120,11 +120,11 @@ class TensorRTInfer(Inference):
             specs.append((o['shape'], o['dtype']))
         return specs
 
-    def infer(self, batch: np.ndarray) -> list[np.ndarray]:
+    def infer(self, batch: np.ndarray) -> np.ndarray:
         """
         Execute inference on a batch of images.
         :param batch: A numpy array holding the image batch.
-        :return A list of outputs as numpy arrays.
+        :return numpy arrays.
         """
         batch = np.ascontiguousarray(batch) # 将图片内存变得连续
         # Copy I/O and Execute
@@ -133,7 +133,8 @@ class TensorRTInfer(Inference):
         for o in range(len(self.outputs)):                    # 将显存中的结果移动到内存上
             cuda.memcpy_dtoh(self.outputs[o]['host_allocation'], self.outputs[o]['allocation'])
 
-        result = [o['host_allocation'] for o in self.outputs] # 取出结果
+        # result = [o['host_allocation'] for o in self.outputs] # 取出结果
+        result = self.outputs[0]['host_allocation']
 
         return result
 

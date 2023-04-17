@@ -109,6 +109,8 @@ names:
 
 # Onnxruntime推理例子
 
+> `onnxruntime-gpu` 使用显卡要使用 `cuda` 和 `cudnn
+
 ```python
 from onnxruntime_infer import OrtInference
 from utils import get_image
