@@ -29,7 +29,7 @@ class Inference(ABC):
         self.score_threshold      = score_threshold
         self.nms_threshold        = nms_threshold
         self.openvino_preprocess  = openvino_preprocess
-        self.fp16                 = False   # 默认不使用半精度,使用半精度时会自动判断
+        self.fp16                 = False   # 默认不使用半精度,使用半精度时会自动判断,在onnxruntime_infer和tensorrt_infer初始化会自动推断,openvino不需要处理
 
         # 获取不同颜色
         self.colors = mulit_colors(len(self.config["names"].keys()))
