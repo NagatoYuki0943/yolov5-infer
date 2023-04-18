@@ -123,9 +123,9 @@ def check_onnx(onnx_path, logger: logging.Logger):
     try:
         onnx.checker.check_model(model_)
     except Exception:
-        logger.error("Model incorrect")
+        logger.error("Model incorrect !")
     else:
-        logger.info("Model correct")
+        logger.info("Model correct !")
 
 
 def np_softmax(array: np.ndarray, axis=-1) -> np.ndarray:

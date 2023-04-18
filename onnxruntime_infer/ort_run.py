@@ -19,6 +19,9 @@ class OrtInference(Inference):
             mode (str, optional): cpu cuda tensorrt. Defaults to cpu.
         """
         super().__init__(**kwargs)
+        mode = mode.lower()
+        assert mode in ["cpu", "cuda", "tensorrt"], "onnxruntime only support cpu, cuda and tensorrt inference."
+
         # 0.show some info
         self.logger.info(f"onnxruntime version: {ort.__version__}")
         # self.logger.info(f"onnxruntime all providers: {ort.get_all_providers()}")
@@ -28,6 +31,10 @@ class OrtInference(Inference):
         # 1.检测onnx模型
         check_onnx(model_path, self.logger)
         # 2.载入模型
+        if mode in ["cuda", "tensorrt"]:
+            import os
+            os.environ["CUDA_MODULE_LOADING"] = "LAZY" # Enabling it can significantly reduce device memory usage
+            self.logger.info(f"onnxruntime CUDA_MODULE_LOADING = LAZY")
         self.model = self.get_model(model_path, mode)
         # 3.获取模型收入输出
         self.inputs = self.model.get_inputs()
@@ -43,8 +50,6 @@ class OrtInference(Inference):
         Returns:
             ort.InferenceSession: 模型session
         """
-        mode = mode.lower()
-        assert mode in ["cpu", "cuda", "tensorrt"], "onnxruntime only support cpu, cuda and tensorrt inference."
         self.logger.info(f"inference with {mode} !")
 
         so = ort.SessionOptions()
