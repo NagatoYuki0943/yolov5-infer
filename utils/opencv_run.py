@@ -1,13 +1,9 @@
 """onnx图片需要调整为[B, C, H, W],且需要归一化
 """
-
-import sys
-sys.path.append("../")
-
 from pathlib import Path
 import cv2
 import time
-from utils import resize_and_pad, check_onnx, nms, figure_boxes, load_yaml
+from .functions import resize_and_pad, check_onnx, nms, figure_boxes, load_yaml
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格

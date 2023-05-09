@@ -1,5 +1,4 @@
-from openvino_infer import OVInference
-from utils import get_image
+from utils import get_image, OVInference
 import cv2
 
 
@@ -18,15 +17,16 @@ inference = OVInference(**config)
 
 # 读取图片
 IMAGE_PATH = r"./images/bus.jpg"
-image_rgb = get_image(IMAGE_PATH)
+image_rgb  = get_image(IMAGE_PATH)
 
 # 单张图片推理
 result, image_bgr_detect = inference.single(image_rgb, only_get_boxes=False)
 print(result)
-cv2.imshow("res", image_bgr_detect)
-cv2.waitKey(0)
+SAVE_PATH  = r"./ov_det.jpg"
+cv2.imwrite(SAVE_PATH, image_bgr_detect)
 
 # 多张图片推理
-IMAGE_DIR = r"../datasets/coco128/images/train2017"
-SAVE_DIR  = r"../datasets/coco128/images/train2017_res"
+IMAGE_DIR  = r"../datasets/coco128/images/train2017"
+SAVE_DIR   = r"../datasets/coco128/images/train2017_res"
 # inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True) # save_xml 保存xml文件
+# avg transform time: 3.578125 ms, avg infer time: 44.25 ms, avg nms time: 0.0 ms, avg figure time: 14.1953125 ms
