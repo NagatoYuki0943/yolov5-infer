@@ -19,7 +19,7 @@ class Inference(ABC):
         Args:
             yaml_path (str):                配置文件路径
             confidence_threshold (float):   只有得分大于置信度的预测框会被保留下来,越大越严格
-            score_threshold (float):        nms分类得分阈值,越大越严格
+            score_threshold (float):        opencv nms分类得分阈值,越大越严格
             nms_threshold (float):          非极大抑制所用到的nms_iou大小,越小越严格
             openvino_preprocess (bool, optional): openvino图片预处理，只有openvino模型可用. Defaults to False.
             fp16 (bool, optional):          半精度推理. Defaults to False.

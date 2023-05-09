@@ -37,7 +37,7 @@ class TensorRTInfer(Inference):
         trt.init_libnvinfer_plugins(self.trtlogger, namespace="")
         with open(model_path, "rb") as f, trt.Runtime(self.trtlogger) as runtime:
             assert runtime
-            self.engine = runtime.deserialize_cuda_engine(f.read())
+            self.engine = runtime.deserialize_cuda_engine(f.read()) # https://github.com/ultralytics/yolov5/blob/master/models/common.py#L398
         assert self.engine
         self.context = self.engine.create_execution_context()
         assert self.context
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         "model_path":           r"../weights/yolov5s.engine",
         "yaml_path":            r"../weights/yolov5.yaml",
         "confidence_threshold": 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
-        "score_threshold":      0.2,    # nms分类得分阈值,越大越严格
+        "score_threshold":      0.2,    # opencv nms分类得分阈值,越大越严格
         "nms_threshold":        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
     }
 
@@ -167,4 +167,4 @@ if __name__ == "__main__":
     IMAGE_DIR = r"../../datasets/coco128/images/train2017"
     SAVE_DIR  = r"../../datasets/coco128/images/train2017_res"
     # inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True)
-    # avg transform time: 3.8984375 ms, avg infer time: 7.734375 ms, avg nms time: 0.0234375 ms, avg figure time: 0.0 ms
+    # avg transform time: 4.09375 ms, avg infer time: 8.0078125 ms, avg nms time: 0.0078125 ms, avg figure time: 14.8203125 ms
