@@ -11,7 +11,7 @@ from utils import resize_and_pad, check_onnx, nms, figure_boxes, load_yaml
 
 
 CONFIDENCE_THRESHOLD = 0.25 # 只有得分大于置信度的预测框会被保留下来,越大越严格
-SCORE_THRESHOLD = 0.2       # nms分类得分阈值,越大越严格
+SCORE_THRESHOLD = 0.2       # opencv nms分类得分阈值,越大越严格
 NMS_THRESHOLD = 0.45        # 非极大抑制所用到的nms_iou大小,越小越严格
 
 

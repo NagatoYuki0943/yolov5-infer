@@ -19,6 +19,9 @@ class OrtInference(Inference):
             mode (str, optional): cpu cuda tensorrt. Defaults to cpu.
         """
         super().__init__(**kwargs)
+
+        self.openvino_preprocess = False    # TODO: 更好的方式将openvino_preprocess在不使用openvino时设置为False
+
         mode = mode.lower()
         assert mode in ["cpu", "cuda", "tensorrt"], "onnxruntime only support cpu, cuda and tensorrt inference."
 
@@ -88,8 +91,6 @@ class OrtInference(Inference):
                 ]
         }[mode]
 
-        self.openvino_preprocess = False    # TODO: 更好的方式将openvino_preprocess在不使用openvino时设置为False
-
         model = ort.InferenceSession(onnx_path, sess_options=so, providers=providers)
 
         # 半精度推理
@@ -134,7 +135,7 @@ if __name__ == "__main__":
         "mode":                 r"cuda",
         "yaml_path":            r"../weights/yolov5.yaml",
         "confidence_threshold": 0.25,   # 只有得分大于置信度的预测框会被保留下来,越大越严格
-        "score_threshold":      0.2,    # nms分类得分阈值,越大越严格
+        "score_threshold":      0.2,    # opencv nms分类得分阈值,越大越严格
         "nms_threshold":        0.45,   # 非极大抑制所用到的nms_iou大小,越小越严格
     }
 
@@ -153,4 +154,4 @@ if __name__ == "__main__":
     IMAGE_DIR = r"../../datasets/coco128/images/train2017"
     SAVE_DIR  = r"../../datasets/coco128/images/train2017_res"
     # inference.multi(IMAGE_DIR, SAVE_DIR, save_xml=True)
-    # avg transform time: 9.40625 ms, avg infer time: 71.7421875 ms, avg nms time: 0.0078125 ms, avg figure time: 0.0 ms
+    # avg transform time: 4.0234375 ms, avg infer time: 12.109375 ms, avg nms time: 0.0 ms, avg figure time: 13.9453125 ms
