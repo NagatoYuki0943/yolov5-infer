@@ -84,6 +84,10 @@ class Inference(ABC):
                     ...
                 ]
         """
+        # float16在nms时速度慢
+        if detections.dtype != np.float32:
+            detections = detections.astype(np.float32)
+
         # 加速优化写法
         # 通过置信度过滤一部分框
         detections     = detections[detections[:, 4] > self.confidence_threshold]
