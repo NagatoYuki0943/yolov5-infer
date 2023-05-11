@@ -84,7 +84,7 @@ class Inference(ABC):
                     ...
                 ]
         """
-        # float16在nms时速度慢
+        # numpy float16 速度慢 https://stackoverflow.com/questions/56697332/float16-is-much-slower-than-float32-and-float64-in-numpy
         if detections.dtype != np.float32:
             detections = detections.astype(np.float32)
 
