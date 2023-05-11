@@ -223,6 +223,30 @@ SAVE_DIR   = r"../datasets/coco128/images/train2017_res"
 # avg transform time: 4.09375 ms, avg infer time: 8.0078125 ms, avg nms time: 0.0078125 ms, avg figure time: 14.8203125 ms
 ```
 
+## 环境变量example
+
+### windows
+
+```sh
+# tensorrt
+D:\code\TensorRT\bin
+D:\code\TensorRT\lib
+```
+
+### linux
+
+> bash&zsh
+
+```sh
+# cuda
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+# tensorrt
+export PATH=/home/TensorRT/bin:$PATH
+export LD_LIBRARY_PATH=/home/TensorRT/lib:$LD_LIBRARY_PATH
+```
+
 # OpenCV推理例子
 
 ```python
