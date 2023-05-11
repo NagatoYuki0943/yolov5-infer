@@ -50,14 +50,14 @@ class Inference(ABC):
 
 
     @abstractmethod
-    def infer(self, image: np.ndarray) -> list[np.ndarray]:
+    def infer(self, image: np.ndarray) -> np.ndarray:
         """推理图片
 
         Args:
             image (np.ndarray): 图片
 
         Returns:
-            list[np.ndarray]: 推理结果
+            np.ndarray: 推理结果
         """
         raise NotImplementedError
 
@@ -84,11 +84,6 @@ class Inference(ABC):
                     ...
                 ]
         """
-        # numpy float16 速度慢 https://stackoverflow.com/questions/56697332/float16-is-much-slower-than-float32-and-float64-in-numpy
-        if detections.dtype != np.float32:
-            detections = detections.astype(np.float32)
-
-        # 加速优化写法
         # 通过置信度过滤一部分框
         detections     = detections[detections[:, 4] > self.confidence_threshold]
         # 位置坐标
@@ -274,20 +269,23 @@ class Inference(ABC):
         # 1. 缩放图片,扩展的宽高
         t1 = time.time()
         image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
-        input_array = transform(image_reized, self.openvino_preprocess, self.fp16)
+        input_array = transform(image_reized, self.openvino_preprocess)
 
         # 2. 推理
         t2 = time.time()
-        boxes = self.infer(input_array)
+        # numpy float16 速度慢 https://stackoverflow.com/questions/56697332/float16-is-much-slower-than-float32-and-float64-in-numpy
+        # 传递参数时转变类型比传递后再转换要快
+        boxes = self.infer(input_array.astype(np.float16) if self.fp16 else input_array).astype(np.float32)
         # print(boxes.shape)        # [1, 25200, 85]
 
         # 3. NMS
         t3 = time.time()
-        detections = boxes[0]       # [25200, 85]
-        detections = self.nms(detections)
+        detections = self.nms(boxes[0]) # [1, 25200, 85] -> [25200, 85]
+
         # 4. 将坐标还原到原图尺寸
         detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
         t4 = time.time()
+
         # 5. 画图或者获取json
         if ignore_overlap_box:  # 忽略重叠的小框,不同于nms
             detections = ignore_overlap_boxes(detections)
@@ -335,20 +333,21 @@ class Inference(ABC):
             t1 = time.time()
             image_rgb = get_image(image_path)
             image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
-            input_array = transform(image_reized, self.openvino_preprocess, self.fp16)
+            input_array = transform(image_reized, self.openvino_preprocess)
 
             # 4. 推理
             t2 = time.time()
-            boxes = self.infer(input_array)
-            # print(boxes.shape)        # [1, 25200, 85]
+            boxes = self.infer(input_array.astype(np.float16) if self.fp16 else input_array).astype(np.float32)
+            # print(boxes.shape)        [1, 25200, 85]
 
             # 5. NMS
             t3 = time.time()
-            detections = boxes[0]       # [25200, 85]
-            detections = self.nms(detections)
+            detections = self.nms(boxes[0]) # [1, 25200, 85] -> [25200, 85]
+
             # 6. 将坐标还原到原图尺寸
             detections = self.box_to_origin(detections, delta_w, delta_h, image_rgb.shape)
             t4 = time.time()
+
             # 7. 画图
             if ignore_overlap_box: # # 忽略重叠的小框,不同于nms
                 detections = ignore_overlap_boxes(detections)
