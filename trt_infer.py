@@ -11,7 +11,7 @@ config = {
 }
 
 # 实例化推理器
-inference = TensorRTInfer(**config)
+inference  = TensorRTInfer(**config)
 
 # 读取图片
 IMAGE_PATH = r"./images/bus.jpg"

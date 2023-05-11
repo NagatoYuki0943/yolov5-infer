@@ -13,7 +13,7 @@ config = {
 }
 
 # 实例化推理器
-inference = OVInference(**config)
+inference  = OVInference(**config)
 
 # 读取图片
 IMAGE_PATH = r"./images/bus.jpg"
