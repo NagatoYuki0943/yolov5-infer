@@ -1,5 +1,7 @@
 # 运行yolov5导出的onnx,engine,openvino等
 
+支持v6.1以及以上的版本
+
 下载pt,onnx地址 [Releases · ultralytics/yolov5 (github.com)](https://github.com/ultralytics/yolov5/releases)
 
 # 参考
