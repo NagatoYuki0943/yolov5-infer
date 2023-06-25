@@ -52,18 +52,25 @@ def resize_and_pad(image, new_shape):
         Tuple: 缩放的图片, 填充的宽, 填充的高
     """
     old_size = image.shape[:2]
-    ratio = float(new_shape[-1]/max(old_size)) #fix to accept also rectangular images
-    new_size = tuple([int(x*ratio) for x in old_size])
+    ratio = float(new_shape[-1] / max(old_size)) # fix to accept also rectangular images
+    new_size = tuple([int(x * ratio) for x in old_size])
     # 缩放高宽的长边为640
     image = cv2.resize(image, (new_size[1], new_size[0]))
     # 填充bottom和right的长度
     delta_w = new_shape[1] - new_size[1]
     delta_h = new_shape[0] - new_size[0]
     # 使用灰色填充到640*640的形状
-    color = [100, 100, 100]
-    #                                 src, top, bottom, left, right
-    image_reized = cv2.copyMakeBorder(image, 0, delta_h, 0, delta_w, cv2.BORDER_CONSTANT, value=color)
-
+    color = [128, 128, 128]
+    # 右下方向添加灰条
+    image_reized = cv2.copyMakeBorder(
+        src=image,
+        top=0,
+        bottom=delta_h,
+        left=0,
+        right=delta_w,
+        borderType=cv2.BORDER_CONSTANT,
+        value=color
+    )
     return image_reized, delta_w ,delta_h
 
 
@@ -376,8 +383,46 @@ def json2xml(data: dict, path: str, file_name: str):
     new_tree.write(xml_path, encoding="utf-8")
 
 
+def xywh2xyxy(x: np.ndarray) -> np.ndarray:
+    """将xyhw格式的坐标转换为xyxy格式的坐标
+        xyhw指的是 x_center, y_center, w, h
+
+    Args:
+        x (np.ndarray): x_center, y_center, w, h 形状的数据
+
+    Returns:
+        np.ndarray: xmin, ymin, xmax, ymax 形状的数据
+    """
+    y = x.copy()
+    y[..., 0] -= y[..., 2] / 2  # x_center -> xmin
+    y[..., 1] -= y[..., 3] / 2  # y_center -> ymin
+    y[..., 2] += y[..., 0]      # w -> xmax
+    y[..., 3] += y[..., 1]      # h -> ymax
+    return y
+
+
+def xyxy2xywh(x: np.ndarray) -> np.ndarray:
+    """将xyxy格式的坐标转换为xywh格式的坐标
+        xyhw指的是 x_center, y_center, w, h
+
+    Args:
+        x (np.ndarray): xmin, ymin, xmax, ymax 形状的数据
+
+    Returns:
+        np.ndarray: x_center, y_center, w, h 形状的数据
+    """
+    w = x[..., 2] = x[..., 0]
+    h = x[..., 3] = x[..., 1]
+    y = x.copy()
+    y[..., 0] += w / 2  # xmin -> x_center
+    y[..., 1] += h / 2  # ymin -> y_center
+    y[..., 2] = w       # xmax -> w
+    y[..., 3] = h       # ymax -> h
+    return y
+
+
 if __name__ == "__main__":
-    # y = load_yaml("../weights/yolov5.yaml")
+    # y = load_yaml("../weights/yolov8.yaml")
     # print(y["size"])   # [640, 640]
     # print(y["stride"]) # 32
     # print(y["names"])  # {0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}
