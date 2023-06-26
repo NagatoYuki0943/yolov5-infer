@@ -146,7 +146,7 @@ class Inference(ABC):
         return detections
 
 
-    def box_to_origin(self, detections_in: np.ndarray, delta_w: int, delta_h: int, shape: np.ndarray) -> np.ndarray:
+    def box_to_origin(self, detections_in: np.ndarray, ratio: float, shape: np.ndarray) -> np.ndarray:
         """将将检测结果的坐标还原到原图尺寸
 
         Args:
@@ -155,8 +155,7 @@ class Inference(ABC):
                         [class_index, confidences, xmin, ymin, xmax, ymax],
                         ...
                     ]
-            delta_w (int):      填充的宽
-            delta_h (int):      填充的高
+            ratio (float):      缩放比例
             shape (np.ndarray): 原始形状 (h, w, c)
 
         Returns:
@@ -167,10 +166,7 @@ class Inference(ABC):
 
         detections = detections_in.copy()
         # 还原到原图尺寸
-        detections[..., 2] = detections[..., 2] / (self.config["imgsz"][1] - delta_w) * shape[1]    # xmin
-        detections[..., 3] = detections[..., 3] / (self.config["imgsz"][0] - delta_h) * shape[0]    # ymin
-        detections[..., 4] = detections[..., 4] / (self.config["imgsz"][1] - delta_w) * shape[1]    # xmax
-        detections[..., 5] = detections[..., 5] / (self.config["imgsz"][0] - delta_h) * shape[0]    # ymax
+        detections[..., 2:] /= ratio
 
         # 防止框超出图片边界, 前面判断为True/False,后面选择更改的列,不选择更改的列会将整行都改为0
         detections[detections[..., 2] < 0.0, 2] = 0.0
@@ -296,7 +292,7 @@ class Inference(ABC):
 
         # 1. 缩放图片,扩展的宽高
         t1 = time.time()
-        image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
+        image_reized, ratio = resize_and_pad(image_rgb, self.config["imgsz"])
         input_array = transform(image_reized, self.openvino_preprocess)
 
         # 2. 推理
@@ -310,7 +306,7 @@ class Inference(ABC):
         detections = self.nms(boxes)    # [1, 25200, 85] -> [[[class_index, confidences, xmin, ymin, xmax, ymax],]]
 
         # 4. 将坐标还原到原图尺寸
-        detections = self.box_to_origin(detections[0], delta_w, delta_h, image_rgb.shape)
+        detections = self.box_to_origin(detections[0], ratio, image_rgb.shape)
         t4 = time.time()
 
         # 5. 画图或者获取json
@@ -359,7 +355,7 @@ class Inference(ABC):
             # 3. 获取图片,缩放的图片,扩展的宽高
             t1 = time.time()
             image_rgb = get_image(image_path)
-            image_reized, delta_w ,delta_h = resize_and_pad(image_rgb, self.config["imgsz"])
+            image_reized, ratio = resize_and_pad(image_rgb, self.config["imgsz"])
             input_array = transform(image_reized, self.openvino_preprocess)
 
             # 4. 推理
@@ -371,7 +367,7 @@ class Inference(ABC):
             detections = self.nms(boxes)    # [1, 25200, 85] -> [[[class_index, confidences, xmin, ymin, xmax, ymax],]]
 
             # 6. 将坐标还原到原图尺寸
-            detections = self.box_to_origin(detections[0], delta_w, delta_h, image_rgb.shape)
+            detections = self.box_to_origin(detections[0], ratio, image_rgb.shape)
             t4 = time.time()
 
             # 7. 画图
