@@ -80,7 +80,7 @@ class Inference(ABC):
         Returns:
             (list[np.ndarray]): list代表每张图片,里面是一个ndarray,代表一张图片的结果,如果图片没有结果就为 []
                 [
-                    [[class_index, confidences, xmin, ymin, xmax, ymax],
+                    [[class_index, confidence, xmin, ymin, xmax, ymax],
                     ..]
                 ]
         """
@@ -152,7 +152,7 @@ class Inference(ABC):
         Args:
             detections_in (np.ndarray): np.float32
                     [
-                        [class_index, confidences, xmin, ymin, xmax, ymax],
+                        [class_index, confidence, xmin, ymin, xmax, ymax],
                         ...
                     ]
             ratio (float):      缩放比例
@@ -183,7 +183,7 @@ class Inference(ABC):
         Args:
             detections (np.ndarray): np.float32
                     [
-                        [class_index, confidences, xmin, ymin, xmax, ymax],
+                        [class_index, confidence, xmin, ymin, xmax, ymax],
                         ...
                     ]
             image (np.ndarray): 原图
@@ -241,7 +241,7 @@ class Inference(ABC):
         Args:
             detections (np.ndarray): np.float32
                     [
-                        [class_index, confidences, xmin, ymin, xmax, ymax],
+                        [class_index, confidence, xmin, ymin, xmax, ymax],
                         ...
                     ]
             shape (np.ndarray): (h, w, c)
