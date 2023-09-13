@@ -20,7 +20,7 @@ SCORE_THRESHOLD = 0.2       # 框的得分置信度,越大越严格
 NMS_THRESHOLD = 0.45        # 非极大抑制所用到的nms_iou大小,越小越严格
 
 
-def get_image(image_path):
+def read_image(image_path):
     """获取图像
 
     Args:
@@ -66,7 +66,7 @@ def inference():
     YAML_PATH  = "../../weights/yolov5.yaml"
 
     # 1.获取图片,缩放的图片,扩展的宽高
-    img, input_tensor, delta_w ,delta_h = get_image(IMAGE_PATH)
+    img, input_tensor, delta_w ,delta_h = read_image(IMAGE_PATH)
 
     # 2.获取模型
     model = get_engine_model(ENGINE_PATH, ['output0'])
